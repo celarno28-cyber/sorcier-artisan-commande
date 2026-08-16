@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Sorcier Artisan — Commande gravure photo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Bitter:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --parchment:#EFE3C8;
+    --parchment-dark:#E1D1A8;
+    --navy:#1B2433;
+    --navy-light:#2B3648;
+    --terracotta:#C1694A;
+    --terracotta-dark:#9B4E34;
+    --burgundy:#6E1F2E;
+    --brass:#A9824C;
+    --brass-light:#C9AC79;
+    --ink:#241B12;
+    --danger:#8C2A2A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--navy);
+    font-family:'Bitter',serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:0 0 4rem;}
+  .header{
+    background:var(--navy);
+    background-image:
+      radial-gradient(circle at 8% 20%, rgba(169,130,76,0.35) 0, transparent 3px),
+      radial-gradient(circle at 92% 20%, rgba(169,130,76,0.35) 0, transparent 3px),
+      radial-gradient(circle at 8% 85%, rgba(169,130,76,0.35) 0, transparent 3px),
+      radial-gradient(circle at 92% 85%, rgba(169,130,76,0.35) 0, transparent 3px);
+    padding:2.5rem 1.5rem 3rem;
+    text-align:center;
+    border-bottom:6px solid var(--terracotta-dark);
+  }
+  .eyebrow{
+    font-family:'Space Mono',monospace;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    font-size:12px;
+    color:var(--brass-light);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:'Rye',cursive;
+    color:var(--terracotta);
+    font-size:2.4rem;
+    margin:0;
+    letter-spacing:1px;
+    line-height:1.15;
+  }
+  .subtitle{
+    color:var(--parchment);
+    font-size:15px;
+    margin:10px 0 0;
+    opacity:0.85;
+  }
+  .steps{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:0;
+    background:var(--parchment-dark);
+    margin:-1.75rem 1.25rem 0;
+    border-radius:10px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.25);
+    overflow:hidden;
+    position:relative;
+    z-index:2;
+  }
+  .step{
+    padding:16px 12px;
+    text-align:center;
+    border-right:1px dashed var(--brass);
+  }
+  .step:last-child{border-right:none;}
+  .step-num{
+    font-family:'Space Mono',monospace;
+    font-weight:700;
+    color:var(--burgundy);
+    font-size:13px;
+    display:block;
+    margin-bottom:4px;
+  }
+  .step-label{font-size:13px;line-height:1.3;}
+  main{padding:2.5rem 1.25rem 0;}
+  .ticket{
+    background:var(--parchment);
+    border:2px solid var(--brass);
+    border-radius:6px;
+    padding:1.75rem 1.5rem;
+    position:relative;
+  }
+  .ticket::before{
+    content:"";
+    position:absolute;
+    inset:6px;
+    border:1px dashed var(--brass);
+    border-radius:3px;
+    pointer-events:none;
+  }
+  .field{margin-bottom:1.4rem;}
+  .field label{
+    display:block;
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--burgundy);
+    margin-bottom:8px;
+  }
+  .field input[type=text], .field input[type=tel], .field textarea{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--brass);
+    border-radius:4px;
+    background:#fff;
+    font-family:'Bitter',serif;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .field input:focus, .field textarea:focus{
+    outline:2px solid var(--terracotta);
+    outline-offset:1px;
+  }
+  .field textarea{resize:vertical;min-height:70px;}
+  .err{color:var(--danger);font-size:12px;margin-top:6px;display:none;font-family:'Space Mono',monospace;}
+  .err.show{display:block;}
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+  }
+  .fmt-card{
+    border:1.5px solid var(--brass);
+    border-radius:6px;
+    background:#fff;
+    padding:12px 6px;
+    text-align:center;
+    cursor:pointer;
+    font-size:12.5px;
+    line-height:1.25;
+    transition:transform .12s ease;
+  }
+  .fmt-card:hover{transform:translateY(-2px);}
+  .fmt-card.selected{
+    background:var(--terracotta);
+    border-color:var(--terracotta-dark);
+    color:#fff;
+    font-weight:700;
+  }
+  .size-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .size-pill{
+    border:1.5px solid var(--brass);
+    border-radius:20px;
+    padding:8px 16px;
+    font-size:13px;
+    background:#fff;
+    cursor:pointer;
+  }
+  .size-pill.selected{
+    background:var(--burgundy);
+    border-color:var(--burgundy);
+    color:#fff;
+  }
+  .dropzone{
+    border:2px dashed var(--brass);
+    border-radius:6px;
+    background:#fbf6e8;
+    padding:24px 12px;
+    text-align:center;
+    cursor:pointer;
+    position:relative;
+  }
+  .dropzone.has-photo{padding:12px;}
+  .dropzone p{margin:0;font-size:13px;color:var(--terracotta-dark);}
+  .dropzone .hint{font-size:11px;color:#8a7c5a;margin-top:4px;}
+  .preview-img{max-width:100%;max-height:220px;border-radius:4px;display:block;margin:0 auto;}
+  input[type=file]{display:none;}
+  .submit-btn{
+    width:100%;
+    background:var(--burgundy);
+    color:#fff;
+    border:none;
+    padding:16px;
+    font-family:'Rye',cursive;
+    font-size:1.15rem;
+    letter-spacing:1px;
+    border-radius:6px;
+    cursor:pointer;
+    margin-top:0.5rem;
+  }
+  .submit-btn:active{transform:scale(0.98);}
+  .submit-btn:disabled{opacity:0.6;cursor:default;}
+  .confirm{
+    background:var(--parchment);
+    border:2px solid var(--brass);
+    border-radius:6px;
+    padding:2rem 1.5rem;
+    text-align:center;
+  }
+  .seal{
+    width:88px;height:88px;border-radius:50%;
+    background:var(--burgundy);
+    color:var(--parchment);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Rye',cursive;font-size:1.5rem;
+    margin:0 auto 1rem;
+    border:3px solid var(--brass-light);
+    animation:stamp .5s ease;
+  }
+  @keyframes stamp{
+    0%{transform:scale(2.2) rotate(-8deg);opacity:0;}
+    60%{transform:scale(0.92) rotate(2deg);opacity:1;}
+    100%{transform:scale(1) rotate(0);}
+  }
+  .confirm h2{font-family:'Rye',cursive;color:var(--burgundy);margin:0 0 6px;font-size:1.4rem;}
+  .order-no{font-family:'Space Mono',monospace;font-size:13px;color:#8a7c5a;margin-bottom:1rem;}
+  .recap{text-align:left;font-size:14px;background:#fff;border:1px solid var(--brass);border-radius:4px;padding:12px 14px;margin-top:1rem;}
+  .recap div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #d8cba0;}
+  .recap div:last-child{border-bottom:none;}
+  .recap span:first-child{color:#8a7c5a;font-size:12px;}
+  .new-order{
+    margin-top:1.25rem;
+    background:none;
+    border:1px solid var(--burgundy);
+    color:var(--burgundy);
+    padding:10px 20px;
+    border-radius:4px;
+    font-family:'Bitter',serif;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .admin-toggle{
+    text-align:center;
+    margin-top:2rem;
+    font-size:12px;
+  }
+  .admin-toggle a{color:var(--brass-light);text-decoration:none;border-bottom:1px dotted var(--brass-light);cursor:pointer;}
+  .admin-panel{
+    margin-top:1rem;
+    background:var(--parchment);
+    border:2px solid var(--brass);
+    border-radius:6px;
+    padding:1.25rem;
+  }
+  .admin-panel h3{font-family:'Rye',cursive;color:var(--burgundy);margin:0 0 12px;font-size:1.1rem;}
+  .order-row{
+    background:#fff;
+    border:1px solid var(--brass);
+    border-radius:4px;
+    padding:10px 12px;
+    margin-bottom:8px;
+    font-size:13px;
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+  }
+  .order-row img{width:56px;height:56px;object-fit:cover;border-radius:4px;flex-shrink:0;}
+  .order-row .meta{flex:1;}
+  .order-row .meta b{display:block;}
+  .order-row .meta .small{color:#8a7c5a;font-size:11.5px;margin-top:2px;}
+  .loading{text-align:center;color:var(--parchment);font-size:13px;padding:1rem;}
+  @media (max-width:480px){
+    .card-grid{grid-template-columns:repeat(2,1fr);}
+    .steps{grid-template-columns:1fr;}
+    .step{border-right:none;border-bottom:1px dashed var(--brass);}
+    .step:last-child{border-bottom:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <p class="eyebrow">Atelier de gravure laser</p>
+    <h1>Le Sorcier Artisan</h1>
+    <p class="subtitle">Envoie ta photo, choisis ton support, on grave.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step"><span class="step-num">01</span><span class="step-label">Choisis ton support</span></div>
+    <div class="step"><span class="step-num">02</span><span class="step-label">Envoie ta photo</span></div>
+    <div class="step"><span class="step-num">03</span><span class="step-label">On te recontacte</span></div>
+  </div>
+
+  <main>
+
+    <form id="order-form" class="ticket">
+      <div class="field">
+        <label for="f-name">Prénom et nom</label>
+        <input type="text" id="f-name" autocomplete="name">
+        <div class="err" id="err-name">Entre ton prénom et nom.</div>
+      </div>
+
+      <div class="field">
+        <label for="f-contact">Email ou téléphone</label>
+        <input type="text" id="f-contact" placeholder="pour te recontacter" autocomplete="email">
+        <div class="err" id="err-contact">Entre un email ou un numéro de téléphone.</div>
+      </div>
+
+      <div class="field">
+        <label>Support souhaité</label>
+        <div class="card-grid" id="format-grid">
+          <div class="fmt-card" data-value="Aimant photo">Aimant photo</div>
+          <div class="fmt-card" data-value="Plaque bois">Plaque bois</div>
+          <div class="fmt-card" data-value="Ardoise">Ardoise</div>
+          <div class="fmt-card" data-value="Porte-clés">Porte-clés</div>
+          <div class="fmt-card" data-value="Portrait verre/marbre">Portrait verre / marbre</div>
+          <div class="fmt-card" data-value="Autre">Autre</div>
+        </div>
+        <div class="err" id="err-format">Choisis un support.</div>
+      </div>
+
+      <div class="field">
+        <label>Taille souhaitée</label>
+        <div class="size-row" id="size-row">
+          <div class="size-pill" data-value="Petit">Petit</div>
+          <div class="size-pill" data-value="Moyen">Moyen</div>
+          <div class="size-pill" data-value="Grand">Grand</div>
+          <div class="size-pill" data-value="Conseille-moi">Conseille-moi</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-photo">Ta photo</label>
+        <div class="dropzone" id="dropzone">
+          <p id="dz-text">Touche ici pour choisir une photo</p>
+          <p class="hint" id="dz-hint">JPG ou PNG, 10 Mo max</p>
+        </div>
+        <input type="file" id="f-photo" accept="image/*">
+        <div class="err" id="err-photo">Ajoute une photo avant d'envoyer.</div>
+      </div>
+
+      <div class="field">
+        <label for="f-notes">Instructions particulières</label>
+        <textarea id="f-notes" placeholder="recadrage, fond à enlever, texte à ajouter..."></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">Sceller la commande</button>
+    </form>
+
+    <div class="confirm" id="confirm-view" style="display:none;">
+      <div class="seal">SA</div>
+      <h2>Commande scellée</h2>
+      <div class="order-no" id="order-no"></div>
+      <p style="font-size:14px;">On te recontacte à l'adresse indiquée pour la suite.</p>
+      <div class="recap" id="recap"></div>
+      <button class="new-order" id="new-order-btn">Passer une autre commande</button>
+    </div>
+
+    <div class="admin-toggle">
+      <a id="admin-link">Voir les commandes reçues</a>
+    </div>
+    <div class="admin-panel" id="admin-panel" style="display:none;"></div>
+
+  </main>
+</div>
+
+<script>
+(function(){
+  var selectedFormat = null;
+  var selectedSize = null;
+  var photoDataUrl = null;
+  var photoFileName = null;
+
+  var formatGrid = document.getElementById('format-grid');
+  formatGrid.addEventListener('click', function(e){
+    var card = e.target.closest('.fmt-card');
+    if(!card) return;
+    Array.prototype.forEach.call(formatGrid.children, function(c){ c.classList.remove('selected'); });
+    card.classList.add('selected');
+    selectedFormat = card.getAttribute('data-value');
+    document.getElementById('err-format').classList.remove('show');
+  });
+
+  var sizeRow = document.getElementById('size-row');
+  sizeRow.addEventListener('click', function(e){
+    var pill = e.target.closest('.size-pill');
+    if(!pill) return;
+    Array.prototype.forEach.call(sizeRow.children, function(c){ c.classList.remove('selected'); });
+    pill.classList.add('selected');
+    selectedSize = pill.getAttribute('data-value');
+  });
+
+  var dropzone = document.getElementById('dropzone');
+  var fileInput = document.getElementById('f-photo');
+  dropzone.addEventListener('click', function(){ fileInput.click(); });
+
+  fileInput.addEventListener('change', function(){
+    var file = fileInput.files[0];
+    if(!file) return;
+    if(file.size > 10 * 1024 * 1024){
+      document.getElementById('dz-hint').textContent = 'Fichier trop lourd, choisis-en un autre (10 Mo max).';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var img = new Image();
+      img.onload = function(){
+        var maxDim = 1100;
+        var w = img.width, h = img.height;
+        if(w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
+        else if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        photoDataUrl = canvas.toDataURL('image/jpeg', 0.78);
+        photoFileName = file.name;
+        dropzone.classList.add('has-photo');
+        dropzone.innerHTML = '<img class="preview-img" src="' + photoDataUrl + '">';
+        document.getElementById('err-photo').classList.remove('show');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function showErr(id, show){
+    var el = document.getElementById(id);
+    if(show) el.classList.add('show'); else el.classList.remove('show');
+  }
+
+  document.getElementById('order-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = document.getElementById('f-name').value.trim();
+    var contact = document.getElementById('f-contact').value.trim();
+
+    var valid = true;
+    if(!name){ showErr('err-name', true); valid = false; } else showErr('err-name', false);
+    if(!contact){ showErr('err-contact', true); valid = false; } else showErr('err-contact', false);
+    if(!selectedFormat){ showErr('err-format', true); valid = false; } else showErr('err-format', false);
+    if(!photoDataUrl){ showErr('err-photo', true); valid = false; } else showErr('err-photo', false);
+    if(!valid) return;
+
+    var btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Envoi en cours...';
+
+    var orderNumber = 'SA-' + Date.now().toString().slice(-6);
+    var order = {
+      orderNumber: orderNumber,
+      name: name,
+      contact: contact,
+      format: selectedFormat,
+      size: selectedSize || 'non précisé',
+      notes: document.getElementById('f-notes').value.trim(),
+      photoDataUrl: photoDataUrl,
+      photoFileName: photoFileName,
+      timestamp: new Date().toISOString()
+    };
+
+    var key = 'order:' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+
+    window.storage.set(key, JSON.stringify(order), true).then(function(result){
+      btn.disabled = false;
+      btn.textContent = 'Sceller la commande';
+      if(!result){
+        alert("La commande n'a pas pu être envoyée. Réessaie.");
+        return;
+      }
+      document.getElementById('order-form').style.display = 'none';
+      document.getElementById('order-no').textContent = 'N° ' + orderNumber;
+      document.getElementById('recap').innerHTML =
+        '<div><span>Support</span><span>' + escapeHtml(order.format) + '</span></div>' +
+        '<div><span>Taille</span><span>' + escapeHtml(order.size) + '</span></div>' +
+        '<div><span>Contact</span><span>' + escapeHtml(order.contact) + '</span></div>';
+      document.getElementById('confirm-view').style.display = 'block';
+    }).catch(function(){
+      btn.disabled = false;
+      btn.textContent = 'Sceller la commande';
+      alert("La commande n'a pas pu être envoyée. Réessaie.");
+    });
+  });
+
+  document.getElementById('new-order-btn').addEventListener('click', function(){
+    document.getElementById('order-form').reset();
+    document.getElementById('order-form').style.display = 'block';
+    document.getElementById('confirm-view').style.display = 'none';
+    Array.prototype.forEach.call(formatGrid.children, function(c){ c.classList.remove('selected'); });
+    Array.prototype.forEach.call(sizeRow.children, function(c){ c.classList.remove('selected'); });
+    selectedFormat = null; selectedSize = null; photoDataUrl = null; photoFileName = null;
+    dropzone.classList.remove('has-photo');
+    dropzone.innerHTML = '<p id="dz-text">Touche ici pour choisir une photo</p><p class="hint" id="dz-hint">JPG ou PNG, 10 Mo max</p>';
+  });
+
+  function escapeHtml(s){
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  var adminOpen = false;
+  document.getElementById('admin-link').addEventListener('click', function(){
+    var panel = document.getElementById('admin-panel');
+    if(adminOpen){
+      panel.style.display = 'none';
+      adminOpen = false;
+      return;
+    }
+    var code = prompt('Code atelier :');
+    if(code !== 'sorcier'){
+      if(code !== null) alert('Code incorrect.');
+      return;
+    }
+    adminOpen = true;
+    panel.style.display = 'block';
+    panel.innerHTML = '<div class="loading">Chargement des commandes...</div>';
+    window.storage.list('order:', true).then(function(result){
+      if(!result || !result.keys || result.keys.length === 0){
+        panel.innerHTML = '<h3>Commandes reçues</h3><p style="font-size:13px;">Aucune commande pour le moment.</p>';
+        return;
+      }
+      var keys = result.keys.slice().sort().reverse();
+      Promise.all(keys.map(function(k){ return window.storage.get(k, true); })).then(function(items){
+        var html = '<h3>Commandes reçues (' + items.length + ')</h3>';
+        items.forEach(function(item){
+          if(!item) return;
+          var o;
+          try{ o = JSON.parse(item.value); }catch(e){ return; }
+          html += '<div class="order-row">' +
+            '<img src="' + o.photoDataUrl + '">' +
+            '<div class="meta">' +
+              '<b>' + escapeHtml(o.name) + ' — ' + escapeHtml(o.format) + '</b>' +
+              '<span>' + escapeHtml(o.size) + (o.notes ? ' · ' + escapeHtml(o.notes) : '') + '</span>' +
+              '<div class="small">' + escapeHtml(o.contact) + ' · ' + escapeHtml(o.orderNumber) + '</div>' +
+            '</div>' +
+          '</div>';
+        });
+        panel.innerHTML = html;
+      });
+    }).catch(function(){
+      panel.innerHTML = '<h3>Commandes reçues</h3><p style="font-size:13px;">Erreur de chargement.</p>';
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
