@@ -19,6 +19,7 @@
     --brass-light:#C9AC79;
     --ink:#241B12;
     --danger:#8C2A2A;
+    --whatsapp:#3E7A57;
   }
   *{box-sizing:border-box;}
   body{
@@ -169,20 +170,15 @@
     border-color:var(--burgundy);
     color:#fff;
   }
-  .dropzone{
-    border:2px dashed var(--brass);
-    border-radius:6px;
+  .note-box{
     background:#fbf6e8;
-    padding:24px 12px;
-    text-align:center;
-    cursor:pointer;
-    position:relative;
+    border:1px dashed var(--brass);
+    border-radius:6px;
+    padding:12px 14px;
+    font-size:13px;
+    color:var(--terracotta-dark);
+    margin-bottom:1.4rem;
   }
-  .dropzone.has-photo{padding:12px;}
-  .dropzone p{margin:0;font-size:13px;color:var(--terracotta-dark);}
-  .dropzone .hint{font-size:11px;color:#8a7c5a;margin-top:4px;}
-  .preview-img{max-width:100%;max-height:220px;border-radius:4px;display:block;margin:0 auto;}
-  input[type=file]{display:none;}
   .submit-btn{
     width:100%;
     background:var(--burgundy);
@@ -226,8 +222,29 @@
   .recap div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #d8cba0;}
   .recap div:last-child{border-bottom:none;}
   .recap span:first-child{color:#8a7c5a;font-size:12px;}
+  .photo-cta{
+    margin-top:1.5rem;
+    padding-top:1.5rem;
+    border-top:1px dashed var(--brass);
+  }
+  .photo-cta p{font-size:14px;margin:0 0 12px;font-weight:700;color:var(--burgundy);}
+  .photo-buttons{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .photo-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:12px 18px;
+    border-radius:6px;
+    text-decoration:none;
+    font-family:'Bitter',serif;
+    font-weight:700;
+    font-size:14px;
+    border:none;
+  }
+  .photo-btn.whatsapp{background:var(--whatsapp);color:#fff;}
+  .photo-btn.mail{background:var(--navy);color:var(--parchment);}
   .new-order{
-    margin-top:1.25rem;
+    margin-top:1.5rem;
     background:none;
     border:1px solid var(--burgundy);
     color:var(--burgundy);
@@ -262,13 +279,13 @@
   <div class="header">
     <p class="eyebrow">Atelier de gravure laser</p>
     <h1>Le Sorcier Artisan</h1>
-    <p class="subtitle">Envoie ta photo, choisis ton support, on grave.</p>
+    <p class="subtitle">Passe ta commande, on te dit où envoyer ta photo.</p>
   </div>
 
   <div class="steps">
     <div class="step"><span class="step-num">01</span><span class="step-label">Choisis ton support</span></div>
-    <div class="step"><span class="step-num">02</span><span class="step-label">Envoie ta photo</span></div>
-    <div class="step"><span class="step-num">03</span><span class="step-label">On te recontacte</span></div>
+    <div class="step"><span class="step-num">02</span><span class="step-label">Valide ta commande</span></div>
+    <div class="step"><span class="step-num">03</span><span class="step-label">Envoie ta photo par WhatsApp ou email</span></div>
   </div>
 
   <main>
@@ -310,19 +327,11 @@
       </div>
 
       <div class="field">
-        <label for="f-photo">Ta photo</label>
-        <div class="dropzone" id="dropzone">
-          <p id="dz-text">Touche ici pour choisir une photo</p>
-          <p class="hint" id="dz-hint">JPG ou PNG, 10 Mo max</p>
-        </div>
-        <input type="file" id="f-photo" accept="image/*">
-        <div class="err" id="err-photo">Ajoute une photo avant d'envoyer.</div>
-      </div>
-
-      <div class="field">
         <label for="f-notes">Instructions particulières</label>
         <textarea id="f-notes" placeholder="recadrage, fond à enlever, texte à ajouter..."></textarea>
       </div>
+
+      <div class="note-box">Une fois la commande validée, tu recevras un numéro de commande et un bouton pour envoyer directement ta photo par WhatsApp ou par email.</div>
 
       <button type="submit" class="submit-btn" id="submit-btn">Sceller la commande</button>
       <div class="error-box" id="submit-error">La commande n'a pas pu être envoyée. Vérifie ta connexion et réessaie.</div>
@@ -332,8 +341,15 @@
       <div class="seal">SA</div>
       <h2>Commande scellée</h2>
       <div class="order-no" id="order-no"></div>
-      <p style="font-size:14px;">On te recontacte à l'adresse indiquée pour la suite.</p>
+      <p style="font-size:14px;">Il ne reste qu'une étape : envoie-nous ta photo en précisant ton numéro de commande.</p>
       <div class="recap" id="recap"></div>
+      <div class="photo-cta">
+        <p>Envoie ta photo maintenant</p>
+        <div class="photo-buttons">
+          <a class="photo-btn whatsapp" id="wa-btn" href="#" target="_blank" rel="noopener">Par WhatsApp</a>
+          <a class="photo-btn mail" id="mail-btn" href="#">Par email</a>
+        </div>
+      </div>
       <button class="new-order" id="new-order-btn">Passer une autre commande</button>
     </div>
 
@@ -343,11 +359,11 @@
 <script>
 (function(){
   var FORMSPREE_ENDPOINT = 'https://formspree.io/f/xeajroek';
+  var WHATSAPP_NUMBER = '33626744285';
+  var CONTACT_EMAIL = 'celarno28@gmail.com';
 
   var selectedFormat = null;
   var selectedSize = null;
-  var photoBlob = null;
-  var photoDataUrlPreview = null;
 
   var formatGrid = document.getElementById('format-grid');
   formatGrid.addEventListener('click', function(e){
@@ -366,41 +382,6 @@
     Array.prototype.forEach.call(sizeRow.children, function(c){ c.classList.remove('selected'); });
     pill.classList.add('selected');
     selectedSize = pill.getAttribute('data-value');
-  });
-
-  var dropzone = document.getElementById('dropzone');
-  var fileInput = document.getElementById('f-photo');
-  dropzone.addEventListener('click', function(){ fileInput.click(); });
-
-  fileInput.addEventListener('change', function(){
-    var file = fileInput.files[0];
-    if(!file) return;
-    if(file.size > 10 * 1024 * 1024){
-      document.getElementById('dz-hint').textContent = 'Fichier trop lourd, choisis-en un autre (10 Mo max).';
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function(ev){
-      var img = new Image();
-      img.onload = function(){
-        var maxDim = 1400;
-        var w = img.width, h = img.height;
-        if(w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
-        else if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
-        var canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        photoDataUrlPreview = canvas.toDataURL('image/jpeg', 0.82);
-        canvas.toBlob(function(blob){
-          photoBlob = blob;
-        }, 'image/jpeg', 0.82);
-        dropzone.classList.add('has-photo');
-        dropzone.innerHTML = '<img class="preview-img" src="' + photoDataUrlPreview + '">';
-        document.getElementById('err-photo').classList.remove('show');
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
   });
 
   function showErr(id, show){
@@ -426,7 +407,6 @@
     if(!name){ showErr('err-name', true); valid = false; } else showErr('err-name', false);
     if(!contact){ showErr('err-contact', true); valid = false; } else showErr('err-contact', false);
     if(!selectedFormat){ showErr('err-format', true); valid = false; } else showErr('err-format', false);
-    if(!photoBlob){ showErr('err-photo', true); valid = false; } else showErr('err-photo', false);
     if(!valid) return;
 
     var btn = document.getElementById('submit-btn');
@@ -442,7 +422,6 @@
     fd.append('Support', selectedFormat);
     fd.append('Taille', selectedSize || 'non précisé');
     fd.append('Instructions', notes || 'aucune');
-    fd.append('photo', photoBlob, orderNumber + '.jpg');
     fd.append('_subject', 'Nouvelle commande Sorcier Artisan — ' + orderNumber);
 
     fetch(FORMSPREE_ENDPOINT, {
@@ -462,6 +441,13 @@
         '<div><span>Support</span><span>' + escapeHtml(selectedFormat) + '</span></div>' +
         '<div><span>Taille</span><span>' + escapeHtml(selectedSize || 'non précisé') + '</span></div>' +
         '<div><span>Contact</span><span>' + escapeHtml(contact) + '</span></div>';
+
+      var waText = encodeURIComponent('Bonjour, voici ma photo pour la commande ' + orderNumber + ' (' + selectedFormat + ').');
+      document.getElementById('wa-btn').href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + waText;
+      var mailSubject = encodeURIComponent('Photo pour commande ' + orderNumber);
+      var mailBody = encodeURIComponent('Bonjour, voici ma photo pour la commande ' + orderNumber + ' (' + selectedFormat + ').');
+      document.getElementById('mail-btn').href = 'mailto:' + CONTACT_EMAIL + '?subject=' + mailSubject + '&body=' + mailBody;
+
       document.getElementById('confirm-view').style.display = 'block';
     }).catch(function(){
       btn.disabled = false;
@@ -476,9 +462,7 @@
     document.getElementById('confirm-view').style.display = 'none';
     Array.prototype.forEach.call(formatGrid.children, function(c){ c.classList.remove('selected'); });
     Array.prototype.forEach.call(sizeRow.children, function(c){ c.classList.remove('selected'); });
-    selectedFormat = null; selectedSize = null; photoBlob = null; photoDataUrlPreview = null;
-    dropzone.classList.remove('has-photo');
-    dropzone.innerHTML = '<p id="dz-text">Touche ici pour choisir une photo</p><p class="hint" id="dz-hint">JPG ou PNG, 10 Mo max</p>';
+    selectedFormat = null; selectedSize = null;
   });
 })();
 </script>
