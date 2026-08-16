@@ -12,7 +12,6 @@
     --parchment:#EFE3C8;
     --parchment-dark:#E1D1A8;
     --navy:#1B2433;
-    --navy-light:#2B3648;
     --terracotta:#C1694A;
     --terracotta-dark:#9B4E34;
     --burgundy:#6E1F2E;
@@ -238,36 +237,17 @@
     cursor:pointer;
     font-size:13px;
   }
-  .admin-toggle{
-    text-align:center;
-    margin-top:2rem;
-    font-size:12px;
-  }
-  .admin-toggle a{color:var(--brass-light);text-decoration:none;border-bottom:1px dotted var(--brass-light);cursor:pointer;}
-  .admin-panel{
-    margin-top:1rem;
-    background:var(--parchment);
-    border:2px solid var(--brass);
-    border-radius:6px;
-    padding:1.25rem;
-  }
-  .admin-panel h3{font-family:'Rye',cursive;color:var(--burgundy);margin:0 0 12px;font-size:1.1rem;}
-  .order-row{
-    background:#fff;
-    border:1px solid var(--brass);
+  .error-box{
+    background:#fdeaea;
+    border:1px solid var(--danger);
+    color:var(--danger);
     border-radius:4px;
     padding:10px 12px;
-    margin-bottom:8px;
     font-size:13px;
-    display:flex;
-    gap:12px;
-    align-items:flex-start;
+    margin-top:1rem;
+    display:none;
   }
-  .order-row img{width:56px;height:56px;object-fit:cover;border-radius:4px;flex-shrink:0;}
-  .order-row .meta{flex:1;}
-  .order-row .meta b{display:block;}
-  .order-row .meta .small{color:#8a7c5a;font-size:11.5px;margin-top:2px;}
-  .loading{text-align:center;color:var(--parchment);font-size:13px;padding:1rem;}
+  .error-box.show{display:block;}
   @media (max-width:480px){
     .card-grid{grid-template-columns:repeat(2,1fr);}
     .steps{grid-template-columns:1fr;}
@@ -345,6 +325,7 @@
       </div>
 
       <button type="submit" class="submit-btn" id="submit-btn">Sceller la commande</button>
+      <div class="error-box" id="submit-error">La commande n'a pas pu être envoyée. Vérifie ta connexion et réessaie.</div>
     </form>
 
     <div class="confirm" id="confirm-view" style="display:none;">
@@ -356,20 +337,17 @@
       <button class="new-order" id="new-order-btn">Passer une autre commande</button>
     </div>
 
-    <div class="admin-toggle">
-      <a id="admin-link">Voir les commandes reçues</a>
-    </div>
-    <div class="admin-panel" id="admin-panel" style="display:none;"></div>
-
   </main>
 </div>
 
 <script>
 (function(){
+  var FORMSPREE_ENDPOINT = 'https://formspree.io/f/xeajroek';
+
   var selectedFormat = null;
   var selectedSize = null;
-  var photoDataUrl = null;
-  var photoFileName = null;
+  var photoBlob = null;
+  var photoDataUrlPreview = null;
 
   var formatGrid = document.getElementById('format-grid');
   formatGrid.addEventListener('click', function(e){
@@ -405,17 +383,19 @@
     reader.onload = function(ev){
       var img = new Image();
       img.onload = function(){
-        var maxDim = 1100;
+        var maxDim = 1400;
         var w = img.width, h = img.height;
         if(w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
         else if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
         var canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        photoDataUrl = canvas.toDataURL('image/jpeg', 0.78);
-        photoFileName = file.name;
+        photoDataUrlPreview = canvas.toDataURL('image/jpeg', 0.82);
+        canvas.toBlob(function(blob){
+          photoBlob = blob;
+        }, 'image/jpeg', 0.82);
         dropzone.classList.add('has-photo');
-        dropzone.innerHTML = '<img class="preview-img" src="' + photoDataUrl + '">';
+        dropzone.innerHTML = '<img class="preview-img" src="' + photoDataUrlPreview + '">';
         document.getElementById('err-photo').classList.remove('show');
       };
       img.src = ev.target.result;
@@ -428,16 +408,25 @@
     if(show) el.classList.add('show'); else el.classList.remove('show');
   }
 
+  function escapeHtml(s){
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
   document.getElementById('order-form').addEventListener('submit', function(e){
     e.preventDefault();
+    document.getElementById('submit-error').classList.remove('show');
+
     var name = document.getElementById('f-name').value.trim();
     var contact = document.getElementById('f-contact').value.trim();
+    var notes = document.getElementById('f-notes').value.trim();
 
     var valid = true;
     if(!name){ showErr('err-name', true); valid = false; } else showErr('err-name', false);
     if(!contact){ showErr('err-contact', true); valid = false; } else showErr('err-contact', false);
     if(!selectedFormat){ showErr('err-format', true); valid = false; } else showErr('err-format', false);
-    if(!photoDataUrl){ showErr('err-photo', true); valid = false; } else showErr('err-photo', false);
+    if(!photoBlob){ showErr('err-photo', true); valid = false; } else showErr('err-photo', false);
     if(!valid) return;
 
     var btn = document.getElementById('submit-btn');
@@ -445,38 +434,39 @@
     btn.textContent = 'Envoi en cours...';
 
     var orderNumber = 'SA-' + Date.now().toString().slice(-6);
-    var order = {
-      orderNumber: orderNumber,
-      name: name,
-      contact: contact,
-      format: selectedFormat,
-      size: selectedSize || 'non précisé',
-      notes: document.getElementById('f-notes').value.trim(),
-      photoDataUrl: photoDataUrl,
-      photoFileName: photoFileName,
-      timestamp: new Date().toISOString()
-    };
 
-    var key = 'order:' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+    var fd = new FormData();
+    fd.append('Numero de commande', orderNumber);
+    fd.append('Nom', name);
+    fd.append('Contact', contact);
+    fd.append('Support', selectedFormat);
+    fd.append('Taille', selectedSize || 'non précisé');
+    fd.append('Instructions', notes || 'aucune');
+    fd.append('photo', photoBlob, orderNumber + '.jpg');
+    fd.append('_subject', 'Nouvelle commande Sorcier Artisan — ' + orderNumber);
 
-    window.storage.set(key, JSON.stringify(order), true).then(function(result){
+    fetch(FORMSPREE_ENDPOINT, {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json' }
+    }).then(function(res){
       btn.disabled = false;
       btn.textContent = 'Sceller la commande';
-      if(!result){
-        alert("La commande n'a pas pu être envoyée. Réessaie.");
+      if(!res.ok){
+        document.getElementById('submit-error').classList.add('show');
         return;
       }
       document.getElementById('order-form').style.display = 'none';
       document.getElementById('order-no').textContent = 'N° ' + orderNumber;
       document.getElementById('recap').innerHTML =
-        '<div><span>Support</span><span>' + escapeHtml(order.format) + '</span></div>' +
-        '<div><span>Taille</span><span>' + escapeHtml(order.size) + '</span></div>' +
-        '<div><span>Contact</span><span>' + escapeHtml(order.contact) + '</span></div>';
+        '<div><span>Support</span><span>' + escapeHtml(selectedFormat) + '</span></div>' +
+        '<div><span>Taille</span><span>' + escapeHtml(selectedSize || 'non précisé') + '</span></div>' +
+        '<div><span>Contact</span><span>' + escapeHtml(contact) + '</span></div>';
       document.getElementById('confirm-view').style.display = 'block';
     }).catch(function(){
       btn.disabled = false;
       btn.textContent = 'Sceller la commande';
-      alert("La commande n'a pas pu être envoyée. Réessaie.");
+      document.getElementById('submit-error').classList.add('show');
     });
   });
 
@@ -486,59 +476,9 @@
     document.getElementById('confirm-view').style.display = 'none';
     Array.prototype.forEach.call(formatGrid.children, function(c){ c.classList.remove('selected'); });
     Array.prototype.forEach.call(sizeRow.children, function(c){ c.classList.remove('selected'); });
-    selectedFormat = null; selectedSize = null; photoDataUrl = null; photoFileName = null;
+    selectedFormat = null; selectedSize = null; photoBlob = null; photoDataUrlPreview = null;
     dropzone.classList.remove('has-photo');
     dropzone.innerHTML = '<p id="dz-text">Touche ici pour choisir une photo</p><p class="hint" id="dz-hint">JPG ou PNG, 10 Mo max</p>';
-  });
-
-  function escapeHtml(s){
-    var d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
-  }
-
-  var adminOpen = false;
-  document.getElementById('admin-link').addEventListener('click', function(){
-    var panel = document.getElementById('admin-panel');
-    if(adminOpen){
-      panel.style.display = 'none';
-      adminOpen = false;
-      return;
-    }
-    var code = prompt('Code atelier :');
-    if(code !== 'sorcier'){
-      if(code !== null) alert('Code incorrect.');
-      return;
-    }
-    adminOpen = true;
-    panel.style.display = 'block';
-    panel.innerHTML = '<div class="loading">Chargement des commandes...</div>';
-    window.storage.list('order:', true).then(function(result){
-      if(!result || !result.keys || result.keys.length === 0){
-        panel.innerHTML = '<h3>Commandes reçues</h3><p style="font-size:13px;">Aucune commande pour le moment.</p>';
-        return;
-      }
-      var keys = result.keys.slice().sort().reverse();
-      Promise.all(keys.map(function(k){ return window.storage.get(k, true); })).then(function(items){
-        var html = '<h3>Commandes reçues (' + items.length + ')</h3>';
-        items.forEach(function(item){
-          if(!item) return;
-          var o;
-          try{ o = JSON.parse(item.value); }catch(e){ return; }
-          html += '<div class="order-row">' +
-            '<img src="' + o.photoDataUrl + '">' +
-            '<div class="meta">' +
-              '<b>' + escapeHtml(o.name) + ' — ' + escapeHtml(o.format) + '</b>' +
-              '<span>' + escapeHtml(o.size) + (o.notes ? ' · ' + escapeHtml(o.notes) : '') + '</span>' +
-              '<div class="small">' + escapeHtml(o.contact) + ' · ' + escapeHtml(o.orderNumber) + '</div>' +
-            '</div>' +
-          '</div>';
-        });
-        panel.innerHTML = html;
-      });
-    }).catch(function(){
-      panel.innerHTML = '<h3>Commandes reçues</h3><p style="font-size:13px;">Erreur de chargement.</p>';
-    });
   });
 })();
 </script>
