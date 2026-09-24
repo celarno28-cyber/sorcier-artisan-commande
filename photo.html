@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Le Sorcier Artisan — Envoie ta photo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brass: #c9974b;
+      --brass-dark: #8a6a2f;
+      --copper: #b56a3c;
+      --ink: #1b140d;
+      --parchment: #ecdfc4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background:
+        radial-gradient(circle at 50% 0%, #3a2a18 0%, #1b140d 60%),
+        repeating-linear-gradient(45deg, rgba(0,0,0,0.15) 0 2px, transparent 2px 6px);
+      background-color: var(--ink);
+      font-family: 'Cormorant Garamond', serif;
+      color: var(--parchment);
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: linear-gradient(180deg, #2a1f14, #1b140d);
+      border: 3px solid var(--brass);
+      border-radius: 10px;
+      box-shadow: 0 0 0 6px #0d0904, 0 10px 40px rgba(0,0,0,0.6), inset 0 0 30px rgba(201,151,75,0.08);
+      padding: 28px 22px 26px;
+      position: relative;
+    }
+    .card::before, .card::after {
+      content: "⚙";
+      position: absolute;
+      color: var(--brass-dark);
+      font-size: 20px;
+      opacity: 0.8;
+    }
+    .card::before { top: 8px; left: 10px; }
+    .card::after { top: 8px; right: 10px; }
+    h1 {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 22px;
+      text-align: center;
+      color: var(--brass);
+      margin: 6px 0 4px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 0 #000;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 17px;
+      color: #d8c9a3;
+      margin: 0 0 22px;
+      line-height: 1.4;
+    }
+    label {
+      display: block;
+      font-size: 16px;
+      color: var(--brass);
+      margin: 16px 0 6px;
+      letter-spacing: 0.3px;
+    }
+    input[type="text"],
+    input[type="tel"] {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 17px;
+      font-family: inherit;
+      background: #12100b;
+      border: 1px solid var(--brass-dark);
+      border-radius: 6px;
+      color: var(--parchment);
+    }
+    input[type="text"]:focus,
+    input[type="tel"]:focus {
+      outline: none;
+      border-color: var(--brass);
+      box-shadow: 0 0 0 2px rgba(201,151,75,0.25);
+    }
+    .file-wrap {
+      margin-top: 8px;
+      border: 2px dashed var(--brass-dark);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      background: rgba(255,255,255,0.02);
+    }
+    .file-wrap input[type="file"] { display: none; }
+    .file-btn {
+      display: inline-block;
+      padding: 10px 18px;
+      background: linear-gradient(180deg, var(--brass), var(--brass-dark));
+      color: #1b140d;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #preview {
+      margin-top: 12px;
+      max-width: 100%;
+      max-height: 220px;
+      border-radius: 6px;
+      display: none;
+      border: 2px solid var(--brass-dark);
+    }
+    .filename {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #d8c9a3;
+      word-break: break-all;
+    }
+    .consent {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 18px;
+      font-size: 14px;
+      color: #c9bd9f;
+      line-height: 1.4;
+    }
+    .consent input { margin-top: 3px; }
+
+    .format-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      margin-top: 8px;
+      background: #12100b;
+      border: 1px solid var(--brass-dark);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .format-option input { accent-color: var(--brass); width: 18px; height: 18px; flex-shrink: 0; }
+    .format-option:has(input:checked) {
+      border-color: var(--brass);
+      box-shadow: 0 0 0 2px rgba(201,151,75,0.25);
+    }
+    .format-option .fmt-name { flex: 1; color: var(--parchment); }
+    .format-option .fmt-price { color: var(--brass); font-weight: 600; }
+    .chevalet-note {
+      font-size: 13px;
+      color: #b7a67f;
+      margin-top: 8px;
+      font-style: italic;
+    }
+    #totalLine {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 18px;
+      color: var(--brass);
+      font-family: 'Cinzel Decorative', serif;
+    }
+    button#submitBtn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      background: linear-gradient(180deg, var(--copper), #7a3f22);
+      color: #f4e9cf;
+      border: 1px solid #5a2f18;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #4a2415, 0 6px 12px rgba(0,0,0,0.4);
+    }
+    button#submitBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #4a2415; }
+    button#submitBtn:disabled { opacity: 0.6; cursor: default; }
+    #msg {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 16px;
+      min-height: 20px;
+    }
+    #msg.ok { color: #9fd88c; }
+    #msg.err { color: #e0836f; }
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(244,233,207,0.4);
+      border-top-color: #f4e9cf;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Le Sorcier Artisan</h1>
+    <p class="subtitle">Envoie-moi ta photo,<br>je m'occupe du reste ✨</p>
+
+    <form id="photoForm">
+      <label for="prenom">Prénom</label>
+      <input type="text" id="prenom" name="prenom" autocomplete="given-name" required>
+
+      <label for="telephone">Téléphone</label>
+      <input type="tel" id="telephone" name="telephone" autocomplete="tel" placeholder="06 12 34 56 78" required>
+
+      <label>Format de gravure</label>
+      <label class="format-option">
+        <input type="radio" name="format" value="10x10" data-prix="10">
+        <span class="fmt-name">10 x 10 cm</span>
+        <span class="fmt-price">10 €</span>
+      </label>
+      <label class="format-option">
+        <input type="radio" name="format" value="10x15" data-prix="12">
+        <span class="fmt-name">10 x 15 cm</span>
+        <span class="fmt-price">12 €</span>
+      </label>
+      <label class="format-option">
+        <input type="radio" name="format" value="13x18" data-prix="17">
+        <span class="fmt-name">13 x 18 cm</span>
+        <span class="fmt-price">17 €</span>
+      </label>
+      <p class="chevalet-note">Tous les formats sont livrés avec un chevalet en bois offert.</p>
+
+      <div id="totalLine"></div>
+
+      <label>Photo</label>
+      <div class="file-wrap" id="fileWrap">
+        <label class="file-btn" for="photo">Choisir une photo</label>
+        <input type="file" id="photo" name="photo" accept="image/*" required>
+        <div class="filename" id="fileName"></div>
+        <img id="preview" alt="Aperçu">
+      </div>
+
+      <label class="consent">
+        <input type="checkbox" id="consent" required>
+        <span>J'accepte que CELARNO28 utilise ma photo, mon prénom et mon téléphone pour me recontacter au sujet de ma commande.</span>
+      </label>
+
+      <button type="submit" id="submitBtn">Envoyer</button>
+      <div id="msg"></div>
+    </form>
+  </div>
+
+  <script>
+    // === Adresse du script Google qui reçoit les photos ===
+    // (URL "Application Web" du déploiement Apps Script, terminée par /exec)
+    var ENVOI_URL = "https://script.google.com/macros/s/AKfycbzzXQIRbnAhmNeBZGfnV4EwkuoAB2vY-4GIEkbLQK7ObMSygZD4rmL3xeEYxSO1Y9lf/exec";
+
+    var form = document.getElementById('photoForm');
+    var fileInput = document.getElementById('photo');
+    var preview = document.getElementById('preview');
+    var fileNameEl = document.getElementById('fileName');
+    var submitBtn = document.getElementById('submitBtn');
+    var msg = document.getElementById('msg');
+    var compressedDataUrl = null;
+    var totalLine = document.getElementById('totalLine');
+
+    function getSelectedFormat() {
+      var el = document.querySelector('input[name="format"]:checked');
+      return el ? { value: el.value, prix: el.getAttribute('data-prix') } : null;
+    }
+    function updateSummary() {
+      var fmt = getSelectedFormat();
+      totalLine.textContent = fmt ? ('Total : ' + fmt.prix + ' €') : '';
+    }
+    document.querySelectorAll('input[name="format"]').forEach(function (el) {
+      el.addEventListener('change', updateSummary);
+    });
+
+    fileInput.addEventListener('change', function () {
+      var file = fileInput.files[0];
+      if (!file) return;
+      fileNameEl.textContent = file.name;
+      compressImage(file, function (dataUrl) {
+        compressedDataUrl = dataUrl;
+        preview.src = dataUrl;
+        preview.style.display = 'block';
+      });
+    });
+
+    function compressImage(file, callback) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () {
+          var maxDim = 1600;
+          var w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          callback(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      msg.className = '';
+      msg.textContent = '';
+
+      var fmt = getSelectedFormat();
+
+      if (!fmt) {
+        msg.className = 'err';
+        msg.textContent = 'Choisis un format de gravure.';
+        return;
+      }
+      if (!compressedDataUrl) {
+        msg.className = 'err';
+        msg.textContent = fileInput.files.length ? 'Photo en préparation, réessaie dans 2 secondes.' : 'Choisis une photo avant d\'envoyer.';
+        return;
+      }
+
+      var prenom = document.getElementById('prenom').value.trim();
+      var telephone = document.getElementById('telephone').value.trim();
+
+      submitBtn.disabled = true;
+      msg.className = '';
+      msg.innerHTML = '<span class="spinner"></span>Envoi en cours… ne ferme pas la page';
+
+      var base64 = compressedDataUrl.split(',')[1];
+
+      fetch(ENVOI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          prenom: prenom,
+          telephone: telephone,
+          format: fmt.value,
+          prix: fmt.prix,
+          mimeType: 'image/jpeg',
+          base64: base64,
+          fileName: prenom.replace(/[^a-z0-9]/gi, '_') + '.jpg'
+        })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          submitBtn.disabled = false;
+          if (res && res.success) {
+            msg.className = 'ok';
+            msg.textContent = 'Merci ' + prenom + ' ! Ta photo est bien arrivée. 🎩';
+            form.reset();
+            preview.style.display = 'none';
+            fileNameEl.textContent = '';
+            compressedDataUrl = null;
+            totalLine.textContent = '';
+          } else {
+            msg.className = 'err';
+            msg.textContent = 'Oups : ' + (res && res.error ? res.error : 'erreur inconnue') + '. Réessaie.';
+          }
+        })
+        .catch(function () {
+          submitBtn.disabled = false;
+          msg.className = 'err';
+          msg.textContent = 'Erreur de connexion, vérifie ton réseau et réessaie.';
+        });
+    });
+  </script>
+</body>
+</html>
