@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Le Sorcier Artisan — Commande festival</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brass: #c9974b; --brass-dark: #8a6a2f; --copper: #b56a3c;
+      --ink: #1b140d; --parchment: #ecdfc4; --soft: #d8c9a3; --field: #12100b;
+      --ok: #9fd88c; --err: #e0836f;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+      padding: 24px 16px 40px;
+      background: radial-gradient(circle at 50% 0%, #3a2a18 0%, #1b140d 60%), var(--ink);
+      background-attachment: fixed;
+      font-family: 'Cormorant Garamond', Georgia, serif; font-size: 18px; color: var(--parchment);
+    }
+    .card {
+      width: 100%; max-width: 460px; position: relative;
+      background: linear-gradient(180deg, #2a1f14, #1b140d);
+      border: 3px solid var(--brass); border-radius: 10px;
+      box-shadow: 0 0 0 6px #0d0904, 0 10px 40px rgba(0,0,0,.6), inset 0 0 30px rgba(201,151,75,.08);
+      padding: 28px 20px 26px;
+    }
+    .card::before, .card::after { content: "⚙"; position: absolute; top: 8px; color: var(--brass-dark); font-size: 20px; }
+    .card::before { left: 10px; } .card::after { right: 10px; }
+    h1 { font-family: 'Cinzel Decorative', serif; font-size: 24px; text-align: center; color: var(--brass);
+         margin: 6px 0 4px; text-shadow: 0 1px 0 #000; }
+    .subtitle { text-align: center; font-size: 19px; color: var(--soft); margin: 0 0 6px; line-height: 1.35; }
+    .bois { text-align: center; font-style: italic; font-size: 16px; color: #b7a67f; margin: 0 0 18px; }
+    .back { display: inline-block; color: var(--soft); text-decoration: none; font-size: 16px; margin-bottom: 6px; }
+    .back:hover { color: var(--brass); }
+    h2 { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--brass); letter-spacing: .3px;
+         margin: 26px 0 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(201,151,75,.35); }
+    label.lbl { display: block; font-size: 17px; color: var(--brass); margin: 14px 0 6px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row2 > div { min-width: 0; }
+    .cp-ville { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
+    input[type=text], input[type=tel], input[type=email], input[type=date], textarea {
+      width: 100%; padding: 12px 13px; font-size: 17px; font-family: inherit;
+      background: var(--field); border: 1px solid var(--brass-dark); border-radius: 6px; color: var(--parchment);
+    }
+    input[type=date] { color-scheme: dark; min-height: 48px; }
+    textarea { min-height: 80px; resize: vertical; }
+    input:focus, textarea:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .hint { font-size: 15px; color: #b7a67f; font-style: italic; margin: 6px 0 0; }
+
+    .produit { margin-top: 8px; padding: 11px 12px; background: var(--field); border: 1px solid var(--brass-dark);
+               border-radius: 6px; transition: border-color .15s, box-shadow .15s; }
+    .produit.actif { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .p-ligne { display: flex; align-items: center; gap: 10px; }
+    .p-nom { flex: 1; min-width: 0; line-height: 1.2; }
+    .p-prix { color: var(--brass); font-weight: 700; white-space: nowrap; }
+    .p-prix.devis { font-weight: 600; font-style: italic; font-size: 16px; }
+    .stepper { display: flex; align-items: center; border: 1px solid var(--brass-dark); border-radius: 6px; overflow: hidden; }
+    .stepper button { width: 38px; height: 38px; border: 0; background: #2a1f14; color: var(--brass);
+                      font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; }
+    .stepper button:active { background: #3a2a18; }
+    .stepper .qte { width: 30px; text-align: center; font-weight: 700; }
+    .p-detail { display: none; margin-top: 10px; }
+    .produit.actif .p-detail { display: block; }
+
+    .total { text-align: center; margin-top: 18px; font-size: 20px; color: var(--brass);
+             font-family: 'Cinzel Decorative', serif; min-height: 26px; }
+    .total small { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--soft); font-style: italic; }
+
+    .file-wrap { margin-top: 8px; border: 2px dashed var(--brass-dark); border-radius: 8px; padding: 14px; text-align: center; }
+    .file-wrap input[type=file] { display: none; }
+    .file-btn { display: inline-block; padding: 10px 18px; background: linear-gradient(180deg, var(--brass), var(--brass-dark));
+                color: var(--ink); font-weight: 700; border-radius: 6px; cursor: pointer; font-size: 17px; }
+    .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .thumbs:empty { display: none; }
+    .thumb { position: relative; aspect-ratio: 1; border: 2px solid var(--brass-dark); border-radius: 6px; overflow: hidden; background: #000; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb button { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 50%; border: 0;
+                    background: rgba(0,0,0,.75); color: #fff; font-size: 17px; line-height: 26px; cursor: pointer; padding: 0; }
+    .thumb.wait::after { content: ""; position: absolute; inset: 0; margin: auto; width: 22px; height: 22px;
+                         border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf; border-radius: 50%; animation: spin .8s linear infinite; }
+
+    .consent { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; font-size: 15px; color: #c9bd9f; line-height: 1.4; }
+    .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brass); flex-shrink: 0; }
+    button.submit {
+      width: 100%; margin-top: 20px; padding: 15px; font-family: 'Cinzel Decorative', serif; font-size: 17px;
+      background: linear-gradient(180deg, var(--copper), #7a3f22); color: #f4e9cf; border: 1px solid #5a2f18;
+      border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 #4a2415, 0 6px 12px rgba(0,0,0,.4);
+    }
+    button.submit:active { transform: translateY(2px); box-shadow: 0 2px 0 #4a2415; }
+    button.submit:disabled { opacity: .6; cursor: default; }
+    .msg { margin-top: 16px; text-align: center; font-size: 17px; min-height: 22px; line-height: 1.4; }
+    .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf;
+               border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .merci { display: none; text-align: center; padding: 10px 4px; }
+    .merci h2 { border: 0; font-size: 20px; margin-top: 10px; }
+    .merci p { color: var(--soft); line-height: 1.45; }
+    .merci a { color: var(--brass); }
+    @media (max-width: 360px) { .row2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a class="back" href="photo.html">‹ Retour</a>
+    <h1>Le Sorcier Artisan</h1>
+    <p class="subtitle">Commande sur le festival</p>
+    <p class="bois">Toutes mes créations sont gravées sur bois</p>
+
+    <form id="commande" data-type="festival" data-photo-obligatoire="oui"
+          data-merci="Merci {prenom} ! Ta commande est bien arrivée, je m'en occupe.">
+      <label class="lbl" for="prenom">Prénom</label>
+      <input type="text" id="prenom" autocomplete="given-name" required>
+      <label class="lbl" for="telephone">Téléphone</label>
+      <input type="tel" id="telephone" autocomplete="tel" placeholder="06 12 34 56 78" required>
+
+      <h2>Gravure photo sur bois</h2>
+      <div class="produit" data-id="p10x10" data-prix="10">
+        <div class="p-ligne">
+          <span class="p-nom">10 x 10 cm</span><span class="p-prix">10 €</span>
+          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
+        </div>
+      </div>
+      <div class="produit" data-id="p10x15" data-prix="12">
+        <div class="p-ligne">
+          <span class="p-nom">10 x 15 cm</span><span class="p-prix">12 €</span>
+          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
+        </div>
+      </div>
+      <div class="produit" data-id="p13x18" data-prix="17">
+        <div class="p-ligne">
+          <span class="p-nom">13 x 18 cm</span><span class="p-prix">17 €</span>
+          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
+        </div>
+      </div>
+      <p class="hint">Chevalet en bois offert avec chaque gravure photo.</p>
+
+      <h2>Autres créations en bois</h2>
+      <div class="produit" data-id="porteCle" data-prix="6">
+        <div class="p-ligne">
+          <span class="p-nom">Porte-clé</span><span class="p-prix">6 €</span>
+          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
+        </div>
+      </div>
+
+      <div class="total" id="total"></div>
+
+      <h2>Ta photo</h2>
+      <div class="file-wrap">
+        <label class="file-btn" id="photoBtn" for="photo">Choisir une photo</label>
+        <input type="file" id="photo" accept="image/*" multiple>
+        <p class="hint">Jusqu'à 5 photos si tu commandes plusieurs gravures.</p>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+      <label class="consent">
+        <input type="checkbox" required>
+        <span>J'accepte que CELARNO28 utilise ma photo, mon prénom et mon téléphone pour me recontacter au sujet de ma commande.</span>
+      </label>
+      <button type="submit" class="submit" id="envoyer">Envoyer ma commande</button>
+      <div class="msg" id="msg"></div>
+    </form>
+    <div class="merci" id="merci">
+      <h2>Merci ! 🎩</h2>
+      <p id="merciTexte"></p>
+      <p><a href="#" id="encore">Passer une autre commande</a></p>
+    </div>
+  </div>
+  <script>
+    // === Adresse du script Google qui reçoit les commandes (URL /exec du nouveau déploiement du 08/10) ===
+    var ENVOI_URL = "https://script.google.com/macros/s/AKfycbxZNoPe6pOqAZXRjGCshAuecejQZ41jqmgRyh4aplfyq8WO9TsM6kRoWjqOWwN5X60ASw/exec";
+    var MAX_PHOTOS = 5;
+
+    var form = document.getElementById('commande');
+    var TYPE = form.getAttribute('data-type');
+    var PHOTO_OBLIGATOIRE = form.getAttribute('data-photo-obligatoire') === 'oui';
+    var msg = document.getElementById('msg');
+    var btn = document.getElementById('envoyer');
+    var totalEl = document.getElementById('total');
+    var photos = [];   // { id, dataUrl (null pendant la préparation), name }
+    var compteur = 0;
+
+    // ----- Produits avec quantités -----
+    var produits = Array.prototype.slice.call(document.querySelectorAll('.produit'));
+    produits.forEach(function (p) {
+      var qteEl = p.querySelector('.qte');
+      function maj(delta) {
+        var q = Math.max(0, Math.min(50, Number(qteEl.textContent) + delta));
+        qteEl.textContent = q;
+        p.classList.toggle('actif', q > 0);
+        var det = p.querySelector('.detail');
+        if (det) { det.required = q > 0; if (q > 0 && delta > 0 && q === 1) det.focus(); }
+        majTotal();
+      }
+      p.querySelector('.plus').addEventListener('click', function () { maj(1); });
+      p.querySelector('.moins').addEventListener('click', function () { maj(-1); });
+    });
+
+    function lireProduits() {
+      var items = [], total = 0, devis = false;
+      produits.forEach(function (p) {
+        var q = Number(p.querySelector('.qte').textContent);
+        if (!q) return;
+        var det = p.querySelector('.detail');
+        items.push({ id: p.getAttribute('data-id'), qty: q, detail: det ? det.value.trim() : '' });
+        var prix = p.getAttribute('data-prix');
+        if (prix === '') devis = true; else total += Number(prix) * q;
+      });
+      return { items: items, total: total, devis: devis };
+    }
+    function majTotal() {
+      var r = lireProduits();
+      if (!r.items.length) { totalEl.innerHTML = ''; return; }
+      totalEl.innerHTML = 'Total : ' + r.total + ' €' + (r.devis ? ' <small>+ partie sur devis</small>' : '');
+    }
+
+    // ----- Photos (plusieurs, compressées sur le téléphone) -----
+    var fileInput = document.getElementById('photo');
+    var thumbs = document.getElementById('thumbs');
+    fileInput.addEventListener('change', function () {
+      var fichiers = Array.prototype.slice.call(fileInput.files);
+      fileInput.value = '';
+      afficher('', '');
+      fichiers.forEach(function (f) {
+        if (photos.length >= MAX_PHOTOS) { afficher('err', MAX_PHOTOS + ' photos maximum par commande.'); return; }
+        var ph = { id: ++compteur, dataUrl: null, name: f.name };
+        photos.push(ph);
+        dessinerPhotos();
+        compresser(f, function (url) { ph.dataUrl = url; dessinerPhotos(); },
+                      function () { photos = photos.filter(function (x) { return x !== ph; }); dessinerPhotos();
+                                    afficher('err', "Impossible de lire « " + f.name + " ». Essaie une autre photo."); });
+      });
+    });
+    function dessinerPhotos() {
+      thumbs.innerHTML = '';
+      photos.forEach(function (ph) {
+        var d = document.createElement('div');
+        d.className = 'thumb' + (ph.dataUrl ? '' : ' wait');
+        if (ph.dataUrl) { var im = document.createElement('img'); im.src = ph.dataUrl; im.alt = ''; d.appendChild(im); }
+        var x = document.createElement('button');
+        x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Retirer cette photo');
+        x.addEventListener('click', function () { photos = photos.filter(function (p) { return p !== ph; }); dessinerPhotos(); });
+        d.appendChild(x);
+        thumbs.appendChild(d);
+      });
+      document.getElementById('photoBtn').textContent = photos.length ? 'Ajouter une photo' : 'Choisir une photo';
+    }
+    function compresser(file, ok, ko) {
+      var reader = new FileReader();
+      reader.onerror = ko;
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onerror = ko;
+        img.onload = function () {
+          var max = 1600, w = img.width, h = img.height;
+          if (w > max || h > max) { if (w > h) { h = Math.round(h * max / w); w = max; } else { w = Math.round(w * max / h); h = max; } }
+          var c = document.createElement('canvas'); c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          ok(c.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ----- Date souhaitée : pas dans le passé -----
+    var delaiEl = document.getElementById('delai');
+    if (delaiEl) {
+      var t = new Date(); t.setMinutes(t.getMinutes() - t.getTimezoneOffset());
+      delaiEl.min = t.toISOString().slice(0, 10);
+    }
+
+    function afficher(cls, html) { msg.className = 'msg ' + cls; msg.innerHTML = html; }
+    function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+    // ----- Envoi -----
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var r = lireProduits();
+      if (!r.items.length) { afficher('err', 'Choisis au moins un produit avec le bouton +.'); return; }
+      if (photos.some(function (p) { return !p.dataUrl; })) { afficher('err', 'Photo en préparation, réessaie dans 2 secondes.'); return; }
+      if (PHOTO_OBLIGATOIRE && !photos.length) { afficher('err', 'Ajoute au moins une photo.'); return; }
+
+      var donnees = {
+        type: TYPE,
+        prenom: val('prenom'), nom: val('nom'), telephone: val('telephone'), email: val('email'),
+        adresse: val('adresse'), cp: val('cp'), ville: val('ville'), delai: val('delai'), precisions: val('precisions'),
+        items: r.items,
+        photos: photos.map(function (p, i) {
+          return { base64: p.dataUrl.split(',')[1], mimeType: 'image/jpeg',
+                   fileName: (val('prenom') || 'client').replace(/[^a-z0-9]/gi, '_') + '_' + (i + 1) + '.jpg' };
+        })
+      };
+
+      btn.disabled = true;
+      afficher('', '<span class="spinner"></span>Envoi en cours… ne ferme pas la page');
+
+      fetch(ENVOI_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(donnees) })
+        .then(function (rep) { return rep.json(); })
+        .then(function (res) {
+          btn.disabled = false;
+          if (res && res.success) {
+            var txt = form.getAttribute('data-merci').replace('{prenom}', donnees.prenom);
+            if (res.devis) txt += '<br>Pour la partie sur devis, je te recontacte avec un prix.';
+            if (res.photoKo) txt += '<br><b>Attention :</b> ta photo n\'a pas pu être enregistrée, je te recontacte pour la récupérer.';
+            document.getElementById('merciTexte').innerHTML = txt;
+            form.style.display = 'none';
+            document.getElementById('merci').style.display = 'block';
+            window.scrollTo(0, 0);
+          } else {
+            afficher('err', 'Oups : ' + (res && res.error ? res.error : 'erreur inconnue'));
+          }
+        })
+        .catch(function () {
+          btn.disabled = false;
+          afficher('err', 'Erreur de connexion, vérifie ton réseau et réessaie.');
+        });
+    });
+
+    document.getElementById('encore').addEventListener('click', function (e) {
+      e.preventDefault();
+      form.reset();
+      produits.forEach(function (p) { p.querySelector('.qte').textContent = '0'; p.classList.remove('actif');
+                                     var d = p.querySelector('.detail'); if (d) d.required = false; });
+      photos = []; dessinerPhotos(); majTotal(); afficher('', '');
+      document.getElementById('merci').style.display = 'none';
+      form.style.display = 'block';
+      window.scrollTo(0, 0);
+    });
+  </script>
+</body>
+</html>
