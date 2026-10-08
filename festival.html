@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Le Sorcier Artisan — Commande festival</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brass: #c9974b; --brass-dark: #8a6a2f; --copper: #b56a3c;
+      --ink: #1b140d; --parchment: #ecdfc4; --soft: #d8c9a3; --field: #12100b;
+      --ok: #9fd88c; --err: #e0836f;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+      padding: 24px 16px 40px;
+      background: radial-gradient(circle at 50% 0%, #3a2a18 0%, #1b140d 60%), var(--ink);
+      background-attachment: fixed;
+      font-family: 'Cormorant Garamond', Georgia, serif; font-size: 18px; color: var(--parchment);
+    }
+    .card {
+      width: 100%; max-width: 460px; position: relative;
+      background: linear-gradient(180deg, #2a1f14, #1b140d);
+      border: 3px solid var(--brass); border-radius: 10px;
+      box-shadow: 0 0 0 6px #0d0904, 0 10px 40px rgba(0,0,0,.6), inset 0 0 30px rgba(201,151,75,.08);
+      padding: 28px 20px 26px;
+    }
+    .card::before, .card::after { content: "⚙"; position: absolute; top: 8px; color: var(--brass-dark); font-size: 20px; }
+    .card::before { left: 10px; } .card::after { right: 10px; }
+    h1 { font-family: 'Cinzel Decorative', serif; font-size: 24px; text-align: center; color: var(--brass);
+         margin: 6px 0 4px; text-shadow: 0 1px 0 #000; }
+    .subtitle { text-align: center; font-size: 19px; color: var(--soft); margin: 0 0 6px; line-height: 1.35; }
+    .bois { text-align: center; font-style: italic; font-size: 16px; color: #b7a67f; margin: 0 0 18px; }
+    .back { display: inline-block; color: var(--soft); text-decoration: none; font-size: 16px; margin-bottom: 6px; }
+    .back:hover { color: var(--brass); }
+    h2 { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--brass); letter-spacing: .3px;
+         margin: 26px 0 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(201,151,75,.35); }
+    label.lbl { display: block; font-size: 17px; color: var(--brass); margin: 14px 0 6px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row2 > div { min-width: 0; }
+    .cp-ville { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
+    input[type=text], input[type=tel], input[type=email], input[type=date], textarea {
+      width: 100%; padding: 12px 13px; font-size: 17px; font-family: inherit;
+      background: var(--field); border: 1px solid var(--brass-dark); border-radius: 6px; color: var(--parchment);
+    }
+    input[type=date] { color-scheme: dark; min-height: 48px; }
+    textarea { min-height: 80px; resize: vertical; }
+    input:focus, textarea:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .hint { font-size: 15px; color: #b7a67f; font-style: italic; margin: 6px 0 0; }
+    .intro-photo { font-size: 16px; color: var(--soft); margin: 0 0 4px; line-height: 1.35; }
+
+    .produit { margin-top: 8px; padding: 11px 12px; background: var(--field); border: 1px solid var(--brass-dark);
+               border-radius: 6px; transition: border-color .15s, box-shadow .15s; }
+    .produit.actif { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .produit.manque { border-color: var(--err); box-shadow: 0 0 0 2px rgba(224,131,111,.3); }
+    .p-ligne { display: flex; align-items: center; gap: 10px; }
+    .p-nom { flex: 1; min-width: 0; line-height: 1.2; }
+    .p-prix { color: var(--brass); font-weight: 700; white-space: nowrap; }
+    .p-prix.devis { font-weight: 600; font-style: italic; font-size: 16px; }
+    .stepper { display: flex; align-items: center; border: 1px solid var(--brass-dark); border-radius: 6px; overflow: hidden; }
+    .stepper button { width: 38px; height: 38px; border: 0; background: #2a1f14; color: var(--brass);
+                      font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; }
+    .stepper button:active { background: #3a2a18; }
+    .stepper .qte { width: 30px; text-align: center; font-weight: 700; }
+    .p-detail { display: none; margin-top: 10px; }
+    .produit.actif .p-detail { display: block; }
+
+    /* Pour chaque modèle : une photo OU un texte à graver */
+    .slots { margin-top: 4px; }
+    .slots:empty { display: none; }
+    .unite { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(201,151,75,.3); }
+    .u-titre { font-size: 15px; color: var(--soft); margin-bottom: 6px; }
+    .u-titre b { color: var(--brass); }
+    .u-corps { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: stretch; }
+    .u-texte { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .u-texte .ou { font-size: 14px; font-style: italic; color: #b7a67f; }
+    .u-texte textarea { min-height: 0; flex: 1; padding: 8px 10px; font-size: 16px; resize: none; }
+    .unite.vide-err .slot { border-color: var(--err); color: var(--err); }
+    .unite.vide-err textarea { border-color: var(--err); }
+    .slot .retirer { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 50%; border: 0;
+                     background: rgba(0,0,0,.75); color: #fff; font-size: 17px; line-height: 26px; cursor: pointer; padding: 0; z-index: 2; }
+    .slot { position: relative; aspect-ratio: 1; border: 2px dashed var(--brass-dark); border-radius: 6px;
+            overflow: hidden; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; color: var(--brass); font-size: 14px; line-height: 1.15; padding: 4px; background: rgba(255,255,255,.02); }
+    .slot input { display: none; }
+    .slot .plus-photo { font-size: 26px; line-height: 1; margin-bottom: 2px; }
+    .slot.rempli { border-style: solid; border-color: var(--brass); padding: 0; }
+    .slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .slot .tag { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.7); color: var(--parchment);
+                 font-size: 13px; padding: 3px 2px; }
+    .slot.vide-err { border-color: var(--err); color: var(--err); }
+    .slot.wait::after { content: ""; position: absolute; inset: 0; margin: auto; width: 22px; height: 22px;
+                        border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf; border-radius: 50%; animation: spin .8s linear infinite; }
+
+    .total { text-align: center; margin-top: 18px; font-size: 20px; color: var(--brass);
+             font-family: 'Cinzel Decorative', serif; min-height: 26px; }
+    .total small { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--soft); font-style: italic; }
+
+    .consent { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; font-size: 15px; color: #c9bd9f; line-height: 1.4; }
+    .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brass); flex-shrink: 0; }
+    button.submit {
+      width: 100%; margin-top: 20px; padding: 15px; font-family: 'Cinzel Decorative', serif; font-size: 17px;
+      background: linear-gradient(180deg, var(--copper), #7a3f22); color: #f4e9cf; border: 1px solid #5a2f18;
+      border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 #4a2415, 0 6px 12px rgba(0,0,0,.4);
+    }
+    button.submit:active { transform: translateY(2px); box-shadow: 0 2px 0 #4a2415; }
+    button.submit:disabled { opacity: .6; cursor: default; }
+    .msg { margin-top: 16px; text-align: center; font-size: 17px; min-height: 22px; line-height: 1.4; }
+    .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf;
+               border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .merci { display: none; text-align: center; padding: 10px 4px; }
+    .merci h2 { border: 0; font-size: 20px; margin-top: 10px; }
+    .merci p { color: var(--soft); line-height: 1.45; }
+    .merci a { color: var(--brass); }
+    @media (max-width: 360px) { .row2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a class="back" href="photo.html">‹ Retour</a>
+    <h1>Le Sorcier Artisan</h1>
+    <p class="subtitle">Commande sur le festival</p>
+    <p class="bois">Toutes mes créations sont gravées sur bois</p>
+
+    <form id="commande" data-type="festival"
+          data-merci="Merci {prenom} ! Ta commande est bien arrivée, je m'en occupe.">
+      <label class="lbl" for="prenom">Prénom</label>
+      <input type="text" id="prenom" autocomplete="given-name" required>
+      <label class="lbl" for="telephone">Téléphone</label>
+      <input type="tel" id="telephone" autocomplete="tel" placeholder="06 12 34 56 78" required>
+
+      <h2>Gravure photo sur bois</h2>
+      <p class="intro-photo">Choisis tes modèles avec le bouton +. Pour chacun, tu peux ajouter <b>une photo</b> ou écrire <b>le texte à graver</b> (facultatif).</p>
+      <div class="produit" data-id="p10x10" data-court="10x10" data-prix="10">
+        <div class="p-ligne">
+          <span class="p-nom">10 x 10 cm</span><span class="p-prix">10 €</span>
+          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
+        </div>
+        <div class="slots"></div>
+      </div>
+      <div class="produit" data-id="p10x15" data-court="10x15" data-prix="12">
+        <div class="p-ligne">
+          <span class="p-nom">10 x 15 cm</span><span class="p-prix">12 €</span>
+          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
+        </div>
+        <div class="slots"></div>
+      </div>
+      <div class="produit" data-id="p13x18" data-court="13x18" data-prix="17">
+        <div class="p-ligne">
+          <span class="p-nom">13 x 18 cm</span><span class="p-prix">17 €</span>
+          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
+        </div>
+        <div class="slots"></div>
+      </div>
+      <p class="hint">Chevalet en bois offert avec chaque gravure photo.</p>
+
+      <h2>Autres créations en bois</h2>
+      <div class="produit" data-id="porteCle" data-court="Porte-clé" data-prix="6">
+        <div class="p-ligne">
+          <span class="p-nom">Porte-clé</span><span class="p-prix">6 €</span>
+          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
+        </div>
+        <div class="slots"></div>
+      </div>
+
+      <div class="total" id="total"></div>
+
+      <label class="consent">
+        <input type="checkbox" required>
+        <span>J'accepte que CELARNO28 utilise mes photos, textes, prénom et téléphone pour me recontacter au sujet de ma commande.</span>
+      </label>
+      <button type="submit" class="submit" id="envoyer">Envoyer ma commande</button>
+      <div class="msg" id="msg"></div>
+    </form>
+    <div class="merci" id="merci">
+      <h2>Merci ! 🎩</h2>
+      <p id="merciTexte"></p>
+      <p><a href="#" id="encore">Passer une autre commande</a></p>
+    </div>
+  </div>
+  <script src="config.js"></script>
+  <script>
+    // L'adresse du script Google est dans le fichier config.js (variable ENVOI_URL)
+    var MAX_MODELES = 20;
+
+    var form = document.getElementById('commande');
+    var TYPE = form.getAttribute('data-type');
+    var msg = document.getElementById('msg');
+    var btn = document.getElementById('envoyer');
+    var totalEl = document.getElementById('total');
+
+    // ----- Produits : quantité + une case photo par modèle -----
+    var produits = Array.prototype.slice.call(document.querySelectorAll('.produit')).map(function (el) {
+      return { el: el, id: el.getAttribute('data-id'), court: el.getAttribute('data-court'),
+               prix: el.getAttribute('data-prix'), qteEl: el.querySelector('.qte'),
+               slotsEl: el.querySelector('.slots'), detail: el.querySelector('.detail'), photos: [] };
+    });
+    function totalModeles() { return produits.reduce(function (n, p) { return n + p.photos.length; }, 0); }
+    function etiquette(p, i) { return p.court + (p.photos.length > 1 ? ' n°' + (i + 1) : ''); }
+
+    produits.forEach(function (p) {
+      function changer(delta) {
+        if (delta > 0 && totalModeles() >= MAX_MODELES) { afficher('err', MAX_MODELES + ' modèles maximum par commande.'); return; }
+        if (delta > 0) p.photos.push({ dataUrl: null, wait: false, texte: '' });
+        else if (p.photos.length) p.photos.pop();
+        var q = p.photos.length;
+        p.qteEl.textContent = q;
+        p.el.classList.toggle('actif', q > 0);
+        p.el.classList.remove('manque');
+        if (p.detail) { p.detail.required = q > 0; if (q === 1 && delta > 0) p.detail.focus(); }
+        dessiner(p); majTotal(); afficher('', '');
+      }
+      p.el.querySelector('.plus').addEventListener('click', function () { changer(1); });
+      p.el.querySelector('.moins').addEventListener('click', function () { changer(-1); });
+    });
+
+    function dessiner(p) {
+      p.slotsEl.innerHTML = '';
+      p.photos.forEach(function (ph, i) {
+        var u = document.createElement('div');
+        u.className = 'unite' + (ph.err ? ' vide-err' : '');
+        var titre = document.createElement('div'); titre.className = 'u-titre';
+        titre.innerHTML = (p.photos.length > 1 ? '<b>' + p.court + ' n°' + (i + 1) + '</b> : ' : '') + 'photo ou texte à graver <i>(facultatif)</i>';
+        u.appendChild(titre);
+        var corps = document.createElement('div'); corps.className = 'u-corps';
+
+        // Case photo
+        var slot = document.createElement('label');
+        slot.className = 'slot' + (ph.dataUrl ? ' rempli' : '') + (ph.wait ? ' wait' : '');
+        var input = document.createElement('input');
+        input.type = 'file'; input.accept = 'image/*';
+        input.addEventListener('change', function () {
+          var f = input.files[0]; if (!f) return;
+          ph.wait = true; ph.err = false; dessiner(p);
+          compresser(f, function (url) { ph.dataUrl = url; ph.wait = false; dessiner(p); verifierProduit(p); },
+                        function () { ph.wait = false; dessiner(p); afficher('err', "Impossible de lire « " + f.name + " ». Essaie une autre photo."); });
+        });
+        slot.appendChild(input);
+        if (ph.dataUrl) {
+          var im = document.createElement('img'); im.src = ph.dataUrl; im.alt = ''; slot.appendChild(im);
+          var x = document.createElement('button');
+          x.type = 'button'; x.className = 'retirer'; x.textContent = '×'; x.setAttribute('aria-label', 'Retirer la photo');
+          x.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); ph.dataUrl = null; dessiner(p); });
+          slot.appendChild(x);
+        } else if (!ph.wait) {
+          var plus = document.createElement('span'); plus.className = 'plus-photo'; plus.textContent = '+';
+          var txt = document.createElement('span'); txt.textContent = 'Photo';
+          slot.appendChild(plus); slot.appendChild(txt);
+        }
+        slot.setAttribute('aria-label', 'Photo pour ' + etiquette(p, i));
+        corps.appendChild(slot);
+
+        // Texte à graver
+        var zone = document.createElement('div'); zone.className = 'u-texte';
+        var ou = document.createElement('span'); ou.className = 'ou'; ou.textContent = ph.dataUrl ? 'texte en plus (facultatif)' : 'ou texte à graver';
+        var ta = document.createElement('textarea');
+        ta.maxLength = 200; ta.placeholder = 'Ex. : Mamie, je t’aime'; ta.value = ph.texte;
+        ta.setAttribute('aria-label', 'Texte à graver pour ' + etiquette(p, i));
+        ta.addEventListener('input', function () {
+          ph.texte = ta.value;
+          if (ph.texte.trim()) { ph.err = false; u.classList.remove('vide-err'); verifierProduit(p); }
+        });
+        zone.appendChild(ou); zone.appendChild(ta);
+        corps.appendChild(zone);
+
+        u.appendChild(corps);
+        p.slotsEl.appendChild(u);
+      });
+    }
+    function complet(ph) { return !!ph.dataUrl || !!ph.texte.trim(); }
+    function verifierProduit(p) {
+      if (p.photos.every(complet)) p.el.classList.remove('manque');
+    }
+
+    function lireProduits() {
+      var items = [], total = 0, devis = false;
+      produits.forEach(function (p) {
+        var q = p.photos.length; if (!q) return;
+        items.push({ id: p.id, qty: q, detail: p.detail ? p.detail.value.trim() : '',
+                     units: p.photos.map(function (ph) { return { photo: !!ph.dataUrl, texte: ph.texte.trim() }; }) });
+        if (p.prix === '') devis = true; else total += Number(p.prix) * q;
+      });
+      return { items: items, total: total, devis: devis };
+    }
+    function majTotal() {
+      var r = lireProduits();
+      if (!r.items.length) { totalEl.innerHTML = ''; return; }
+      totalEl.innerHTML = 'Total : ' + r.total + ' €' + (r.devis ? ' <small>+ partie sur devis</small>' : '');
+    }
+
+    function compresser(file, ok, ko) {
+      var reader = new FileReader();
+      reader.onerror = ko;
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onerror = ko;
+        img.onload = function () {
+          var max = 1600, w = img.width, h = img.height;
+          if (w > max || h > max) { if (w > h) { h = Math.round(h * max / w); w = max; } else { w = Math.round(w * max / h); h = max; } }
+          var c = document.createElement('canvas'); c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          ok(c.toDataURL('image/jpeg', 0.8));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ----- Date souhaitée : pas dans le passé -----
+    var delaiEl = document.getElementById('delai');
+    if (delaiEl) {
+      var t = new Date(); t.setDate(t.getDate() + 3); t.setMinutes(t.getMinutes() - t.getTimezoneOffset());
+      delaiEl.min = t.toISOString().slice(0, 10);
+    }
+
+    function afficher(cls, html) { msg.className = 'msg ' + cls; msg.innerHTML = html; }
+    function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+    // ----- Envoi -----
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (typeof ENVOI_URL === 'undefined') { afficher('err', 'Configuration manquante (config.js).'); return; }
+      var r = lireProduits();
+      if (!r.items.length) { afficher('err', 'Choisis au moins un modèle avec le bouton +.'); return; }
+      if (produits.some(function (p) { return p.photos.some(function (ph) { return ph.wait; }); })) {
+        afficher('err', 'Photo en préparation, réessaie dans 2 secondes.'); return;
+      }
+      var prenom = val('prenom') || 'client';
+      var photos = [];
+      produits.forEach(function (p) {
+        p.photos.forEach(function (ph, i) {
+          if (!ph.dataUrl) return;
+          var lab = etiquette(p, i);
+          photos.push({ base64: ph.dataUrl.split(',')[1], mimeType: 'image/jpeg', label: lab,
+                        fileName: (prenom + '_' + lab).replace(/[^a-z0-9]+/gi, '_') + '.jpg' });
+        });
+      });
+      var donnees = {
+        type: TYPE,
+        prenom: val('prenom'), nom: val('nom'), telephone: val('telephone'), email: val('email'),
+        adresse: val('adresse'), cp: val('cp'), ville: val('ville'), delai: val('delai'), precisions: val('precisions'),
+        items: r.items, photos: photos
+      };
+
+      btn.disabled = true;
+      afficher('', '<span class="spinner"></span>Envoi en cours' + (photos.length ? ' (' + photos.length + ' photo' + (photos.length > 1 ? 's' : '') + ')' : '') + '… ne ferme pas la page');
+
+      fetch(ENVOI_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(donnees) })
+        .then(function (rep) { return rep.json(); })
+        .then(function (res) {
+          btn.disabled = false;
+          if (res && res.success) {
+            var txt = form.getAttribute('data-merci').replace('{prenom}', donnees.prenom);
+            if (res.devis) txt += '<br>Pour la partie sur devis, je te recontacte avec un prix.';
+            if (res.photoKo) txt += '<br><b>Attention :</b> une photo n\'a pas pu être enregistrée, je te recontacte pour la récupérer.';
+            document.getElementById('merciTexte').innerHTML = txt;
+            form.style.display = 'none';
+            document.getElementById('merci').style.display = 'block';
+            window.scrollTo(0, 0);
+          } else {
+            afficher('err', 'Oups : ' + (res && res.error ? res.error : 'erreur inconnue'));
+          }
+        })
+        .catch(function () {
+          btn.disabled = false;
+          afficher('err', 'Erreur de connexion, vérifie ton réseau et réessaie.');
+        });
+    });
+
+    document.getElementById('encore').addEventListener('click', function (e) {
+      e.preventDefault();
+      form.reset();
+      produits.forEach(function (p) {
+        p.photos = []; p.qteEl.textContent = '0'; p.el.classList.remove('actif', 'manque');
+        if (p.detail) p.detail.required = false; dessiner(p);
+      });
+      majTotal(); afficher('', '');
+      document.getElementById('merci').style.display = 'none';
+      form.style.display = 'block';
+      window.scrollTo(0, 0);
+    });
+  </script>
+</body>
+</html>
