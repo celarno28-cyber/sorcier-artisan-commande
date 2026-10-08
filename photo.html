@@ -1,377 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Le Sorcier Artisan — Envoie ta photo</title>
+  <title>Le Sorcier Artisan — Commander</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --brass: #c9974b;
-      --brass-dark: #8a6a2f;
-      --copper: #b56a3c;
-      --ink: #1b140d;
-      --parchment: #ecdfc4;
+      --brass: #c9974b; --brass-dark: #8a6a2f; --copper: #b56a3c;
+      --ink: #1b140d; --parchment: #ecdfc4; --soft: #d8c9a3; --field: #12100b;
+      --ok: #9fd88c; --err: #e0836f;
     }
     * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
-      background:
-        radial-gradient(circle at 50% 0%, #3a2a18 0%, #1b140d 60%),
-        repeating-linear-gradient(45deg, rgba(0,0,0,0.15) 0 2px, transparent 2px 6px);
-      background-color: var(--ink);
-      font-family: 'Cormorant Garamond', serif;
-      color: var(--parchment);
+      margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+      padding: 24px 16px 40px;
+      background: radial-gradient(circle at 50% 0%, #3a2a18 0%, #1b140d 60%), var(--ink);
+      background-attachment: fixed;
+      font-family: 'Cormorant Garamond', Georgia, serif; font-size: 18px; color: var(--parchment);
     }
     .card {
-      width: 100%;
-      max-width: 420px;
+      width: 100%; max-width: 460px; position: relative;
       background: linear-gradient(180deg, #2a1f14, #1b140d);
-      border: 3px solid var(--brass);
-      border-radius: 10px;
-      box-shadow: 0 0 0 6px #0d0904, 0 10px 40px rgba(0,0,0,0.6), inset 0 0 30px rgba(201,151,75,0.08);
-      padding: 28px 22px 26px;
-      position: relative;
+      border: 3px solid var(--brass); border-radius: 10px;
+      box-shadow: 0 0 0 6px #0d0904, 0 10px 40px rgba(0,0,0,.6), inset 0 0 30px rgba(201,151,75,.08);
+      padding: 28px 20px 26px;
     }
-    .card::before, .card::after {
-      content: "⚙";
-      position: absolute;
-      color: var(--brass-dark);
-      font-size: 20px;
-      opacity: 0.8;
+    .card::before, .card::after { content: "⚙"; position: absolute; top: 8px; color: var(--brass-dark); font-size: 20px; }
+    .card::before { left: 10px; } .card::after { right: 10px; }
+    h1 { font-family: 'Cinzel Decorative', serif; font-size: 24px; text-align: center; color: var(--brass);
+         margin: 6px 0 4px; text-shadow: 0 1px 0 #000; }
+    .subtitle { text-align: center; font-size: 19px; color: var(--soft); margin: 0 0 6px; line-height: 1.35; }
+    .bois { text-align: center; font-style: italic; font-size: 16px; color: #b7a67f; margin: 0 0 18px; }
+    .back { display: inline-block; color: var(--soft); text-decoration: none; font-size: 16px; margin-bottom: 6px; }
+    .back:hover { color: var(--brass); }
+    h2 { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--brass); letter-spacing: .3px;
+         margin: 26px 0 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(201,151,75,.35); }
+    label.lbl { display: block; font-size: 17px; color: var(--brass); margin: 14px 0 6px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row2 > div { min-width: 0; }
+    .cp-ville { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
+    input[type=text], input[type=tel], input[type=email], input[type=date], textarea {
+      width: 100%; padding: 12px 13px; font-size: 17px; font-family: inherit;
+      background: var(--field); border: 1px solid var(--brass-dark); border-radius: 6px; color: var(--parchment);
     }
-    .card::before { top: 8px; left: 10px; }
-    .card::after { top: 8px; right: 10px; }
-    h1 {
-      font-family: 'Cinzel Decorative', serif;
-      font-size: 22px;
-      text-align: center;
-      color: var(--brass);
-      margin: 6px 0 4px;
-      letter-spacing: 0.5px;
-      text-shadow: 0 1px 0 #000;
-    }
-    .subtitle {
-      text-align: center;
-      font-size: 17px;
-      color: #d8c9a3;
-      margin: 0 0 22px;
-      line-height: 1.4;
-    }
-    label {
-      display: block;
-      font-size: 16px;
-      color: var(--brass);
-      margin: 16px 0 6px;
-      letter-spacing: 0.3px;
-    }
-    input[type="text"],
-    input[type="tel"] {
-      width: 100%;
-      padding: 12px 14px;
-      font-size: 17px;
-      font-family: inherit;
-      background: #12100b;
-      border: 1px solid var(--brass-dark);
-      border-radius: 6px;
-      color: var(--parchment);
-    }
-    input[type="text"]:focus,
-    input[type="tel"]:focus {
-      outline: none;
-      border-color: var(--brass);
-      box-shadow: 0 0 0 2px rgba(201,151,75,0.25);
-    }
-    .file-wrap {
-      margin-top: 8px;
-      border: 2px dashed var(--brass-dark);
-      border-radius: 8px;
-      padding: 16px;
-      text-align: center;
-      background: rgba(255,255,255,0.02);
-    }
-    .file-wrap input[type="file"] { display: none; }
-    .file-btn {
-      display: inline-block;
-      padding: 10px 18px;
-      background: linear-gradient(180deg, var(--brass), var(--brass-dark));
-      color: #1b140d;
-      font-weight: 600;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    #preview {
-      margin-top: 12px;
-      max-width: 100%;
-      max-height: 220px;
-      border-radius: 6px;
-      display: none;
-      border: 2px solid var(--brass-dark);
-    }
-    .filename {
-      margin-top: 8px;
-      font-size: 14px;
-      color: #d8c9a3;
-      word-break: break-all;
-    }
-    .consent {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin-top: 18px;
-      font-size: 14px;
-      color: #c9bd9f;
-      line-height: 1.4;
-    }
-    .consent input { margin-top: 3px; }
+    input[type=date] { color-scheme: dark; min-height: 48px; }
+    textarea { min-height: 80px; resize: vertical; }
+    input:focus, textarea:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .hint { font-size: 15px; color: #b7a67f; font-style: italic; margin: 6px 0 0; }
 
-    .format-option {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 12px 14px;
-      margin-top: 8px;
-      background: #12100b;
-      border: 1px solid var(--brass-dark);
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
+    .produit { margin-top: 8px; padding: 11px 12px; background: var(--field); border: 1px solid var(--brass-dark);
+               border-radius: 6px; transition: border-color .15s, box-shadow .15s; }
+    .produit.actif { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .p-ligne { display: flex; align-items: center; gap: 10px; }
+    .p-nom { flex: 1; min-width: 0; line-height: 1.2; }
+    .p-prix { color: var(--brass); font-weight: 700; white-space: nowrap; }
+    .p-prix.devis { font-weight: 600; font-style: italic; font-size: 16px; }
+    .stepper { display: flex; align-items: center; border: 1px solid var(--brass-dark); border-radius: 6px; overflow: hidden; }
+    .stepper button { width: 38px; height: 38px; border: 0; background: #2a1f14; color: var(--brass);
+                      font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; }
+    .stepper button:active { background: #3a2a18; }
+    .stepper .qte { width: 30px; text-align: center; font-weight: 700; }
+    .p-detail { display: none; margin-top: 10px; }
+    .produit.actif .p-detail { display: block; }
+
+    .total { text-align: center; margin-top: 18px; font-size: 20px; color: var(--brass);
+             font-family: 'Cinzel Decorative', serif; min-height: 26px; }
+    .total small { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--soft); font-style: italic; }
+
+    .file-wrap { margin-top: 8px; border: 2px dashed var(--brass-dark); border-radius: 8px; padding: 14px; text-align: center; }
+    .file-wrap input[type=file] { display: none; }
+    .file-btn { display: inline-block; padding: 10px 18px; background: linear-gradient(180deg, var(--brass), var(--brass-dark));
+                color: var(--ink); font-weight: 700; border-radius: 6px; cursor: pointer; font-size: 17px; }
+    .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .thumbs:empty { display: none; }
+    .thumb { position: relative; aspect-ratio: 1; border: 2px solid var(--brass-dark); border-radius: 6px; overflow: hidden; background: #000; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb button { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 50%; border: 0;
+                    background: rgba(0,0,0,.75); color: #fff; font-size: 17px; line-height: 26px; cursor: pointer; padding: 0; }
+    .thumb.wait::after { content: ""; position: absolute; inset: 0; margin: auto; width: 22px; height: 22px;
+                         border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf; border-radius: 50%; animation: spin .8s linear infinite; }
+
+    .consent { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; font-size: 15px; color: #c9bd9f; line-height: 1.4; }
+    .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brass); flex-shrink: 0; }
+    button.submit {
+      width: 100%; margin-top: 20px; padding: 15px; font-family: 'Cinzel Decorative', serif; font-size: 17px;
+      background: linear-gradient(180deg, var(--copper), #7a3f22); color: #f4e9cf; border: 1px solid #5a2f18;
+      border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 #4a2415, 0 6px 12px rgba(0,0,0,.4);
     }
-    .format-option input { accent-color: var(--brass); width: 18px; height: 18px; flex-shrink: 0; }
-    .format-option:has(input:checked) {
-      border-color: var(--brass);
-      box-shadow: 0 0 0 2px rgba(201,151,75,0.25);
-    }
-    .format-option .fmt-name { flex: 1; color: var(--parchment); }
-    .format-option .fmt-price { color: var(--brass); font-weight: 600; }
-    .chevalet-note {
-      font-size: 13px;
-      color: #b7a67f;
-      margin-top: 8px;
-      font-style: italic;
-    }
-    #totalLine {
-      text-align: center;
-      margin-top: 14px;
-      font-size: 18px;
-      color: var(--brass);
-      font-family: 'Cinzel Decorative', serif;
-    }
-    button#submitBtn {
-      width: 100%;
-      margin-top: 20px;
-      padding: 14px;
-      font-family: 'Cinzel Decorative', serif;
-      font-size: 16px;
-      letter-spacing: 0.5px;
-      background: linear-gradient(180deg, var(--copper), #7a3f22);
-      color: #f4e9cf;
-      border: 1px solid #5a2f18;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 4px 0 #4a2415, 0 6px 12px rgba(0,0,0,0.4);
-    }
-    button#submitBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #4a2415; }
-    button#submitBtn:disabled { opacity: 0.6; cursor: default; }
-    #msg {
-      margin-top: 16px;
-      text-align: center;
-      font-size: 16px;
-      min-height: 20px;
-    }
-    #msg.ok { color: #9fd88c; }
-    #msg.err { color: #e0836f; }
-    .spinner {
-      display: inline-block;
-      width: 16px; height: 16px;
-      border: 2px solid rgba(244,233,207,0.4);
-      border-top-color: #f4e9cf;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
+    button.submit:active { transform: translateY(2px); box-shadow: 0 2px 0 #4a2415; }
+    button.submit:disabled { opacity: .6; cursor: default; }
+    .msg { margin-top: 16px; text-align: center; font-size: 17px; min-height: 22px; line-height: 1.4; }
+    .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf;
+               border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .merci { display: none; text-align: center; padding: 10px 4px; }
+    .merci h2 { border: 0; font-size: 20px; margin-top: 10px; }
+    .merci p { color: var(--soft); line-height: 1.45; }
+    .merci a { color: var(--brass); }
+    @media (max-width: 360px) { .row2 { grid-template-columns: 1fr; } }
+
+  .choix { display: block; text-decoration: none; color: var(--parchment); margin-top: 16px; padding: 18px 16px;
+           background: var(--field); border: 1px solid var(--brass-dark); border-radius: 8px;
+           display: flex; gap: 14px; align-items: center; transition: border-color .15s, transform .1s; }
+  .choix:hover, .choix:focus { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); outline: none; }
+  .choix:active { transform: translateY(1px); }
+  .choix svg { flex-shrink: 0; width: 46px; height: 46px; color: var(--brass); }
+  .choix strong { display: block; font-family: 'Cinzel Decorative', serif; color: var(--brass); font-size: 17px; margin-bottom: 3px; }
+  .choix span { color: var(--soft); font-size: 17px; line-height: 1.3; }
+  .choix .fleche { margin-left: auto; color: var(--brass); font-size: 26px; }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Le Sorcier Artisan</h1>
-    <p class="subtitle">Envoie-moi ta photo,<br>je m'occupe du reste ✨</p>
+    <p class="subtitle">Comment veux-tu commander ?</p>
+    <p class="bois">Toutes mes créations sont gravées sur bois</p>
 
-    <form id="photoForm">
-      <label for="prenom">Prénom</label>
-      <input type="text" id="prenom" name="prenom" autocomplete="given-name" required>
+    <a class="choix" href="festival.html">
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" aria-hidden="true">
+        <path d="M24 6 L42 38 H6 Z"/><path d="M24 6 V38"/><path d="M24 22 L17 38 M24 22 L31 38"/><path d="M24 6 V2 L30 4 L24 6"/>
+      </svg>
+      <div><strong>Sur le festival</strong><span>Tu es au stand : envoie ta photo et choisis ta gravure</span></div>
+      <span class="fleche">›</span>
+    </a>
 
-      <label for="telephone">Téléphone</label>
-      <input type="tel" id="telephone" name="telephone" autocomplete="tel" placeholder="06 12 34 56 78" required>
-
-      <label>Format de gravure</label>
-      <label class="format-option">
-        <input type="radio" name="format" value="10x10" data-prix="10">
-        <span class="fmt-name">10 x 10 cm</span>
-        <span class="fmt-price">10 €</span>
-      </label>
-      <label class="format-option">
-        <input type="radio" name="format" value="10x15" data-prix="12">
-        <span class="fmt-name">10 x 15 cm</span>
-        <span class="fmt-price">12 €</span>
-      </label>
-      <label class="format-option">
-        <input type="radio" name="format" value="13x18" data-prix="17">
-        <span class="fmt-name">13 x 18 cm</span>
-        <span class="fmt-price">17 €</span>
-      </label>
-      <p class="chevalet-note">Tous les formats sont livrés avec un chevalet en bois offert.</p>
-
-      <div id="totalLine"></div>
-
-      <label>Photo</label>
-      <div class="file-wrap" id="fileWrap">
-        <label class="file-btn" for="photo">Choisir une photo</label>
-        <input type="file" id="photo" name="photo" accept="image/*" required>
-        <div class="filename" id="fileName"></div>
-        <img id="preview" alt="Aperçu">
-      </div>
-
-      <label class="consent">
-        <input type="checkbox" id="consent" required>
-        <span>J'accepte que CELARNO28 utilise ma photo, mon prénom et mon téléphone pour me recontacter au sujet de ma commande.</span>
-      </label>
-
-      <button type="submit" id="submitBtn">Envoyer</button>
-      <div id="msg"></div>
-    </form>
+    <a class="choix" href="livraison.html">
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 15 L24 6 L42 15 V35 L24 44 L6 35 Z"/><path d="M6 15 L24 24 L42 15"/><path d="M24 24 V44"/><path d="M15 10.5 L33 19.5"/>
+      </svg>
+      <div><strong>Livraison / envoi</strong><span>Commande à distance, livrée chez toi</span></div>
+      <span class="fleche">›</span>
+    </a>
   </div>
-
-  <script>
-    // === Adresse du script Google qui reçoit les photos ===
-    // (URL "Application Web" du déploiement Apps Script, terminée par /exec)
-    var ENVOI_URL = "https://script.google.com/macros/s/AKfycbzzXQIRbnAhmNeBZGfnV4EwkuoAB2vY-4GIEkbLQK7ObMSygZD4rmL3xeEYxSO1Y9lf/exec";
-
-    var form = document.getElementById('photoForm');
-    var fileInput = document.getElementById('photo');
-    var preview = document.getElementById('preview');
-    var fileNameEl = document.getElementById('fileName');
-    var submitBtn = document.getElementById('submitBtn');
-    var msg = document.getElementById('msg');
-    var compressedDataUrl = null;
-    var totalLine = document.getElementById('totalLine');
-
-    function getSelectedFormat() {
-      var el = document.querySelector('input[name="format"]:checked');
-      return el ? { value: el.value, prix: el.getAttribute('data-prix') } : null;
-    }
-    function updateSummary() {
-      var fmt = getSelectedFormat();
-      totalLine.textContent = fmt ? ('Total : ' + fmt.prix + ' €') : '';
-    }
-    document.querySelectorAll('input[name="format"]').forEach(function (el) {
-      el.addEventListener('change', updateSummary);
-    });
-
-    fileInput.addEventListener('change', function () {
-      var file = fileInput.files[0];
-      if (!file) return;
-      fileNameEl.textContent = file.name;
-      compressImage(file, function (dataUrl) {
-        compressedDataUrl = dataUrl;
-        preview.src = dataUrl;
-        preview.style.display = 'block';
-      });
-    });
-
-    function compressImage(file, callback) {
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        var img = new Image();
-        img.onload = function () {
-          var maxDim = 1600;
-          var w = img.width, h = img.height;
-          if (w > maxDim || h > maxDim) {
-            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-            else { w = Math.round(w * maxDim / h); h = maxDim; }
-          }
-          var canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          callback(canvas.toDataURL('image/jpeg', 0.82));
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      msg.className = '';
-      msg.textContent = '';
-
-      var fmt = getSelectedFormat();
-
-      if (!fmt) {
-        msg.className = 'err';
-        msg.textContent = 'Choisis un format de gravure.';
-        return;
-      }
-      if (!compressedDataUrl) {
-        msg.className = 'err';
-        msg.textContent = fileInput.files.length ? 'Photo en préparation, réessaie dans 2 secondes.' : 'Choisis une photo avant d\'envoyer.';
-        return;
-      }
-
-      var prenom = document.getElementById('prenom').value.trim();
-      var telephone = document.getElementById('telephone').value.trim();
-
-      submitBtn.disabled = true;
-      msg.className = '';
-      msg.innerHTML = '<span class="spinner"></span>Envoi en cours… ne ferme pas la page';
-
-      var base64 = compressedDataUrl.split(',')[1];
-
-      fetch(ENVOI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          prenom: prenom,
-          telephone: telephone,
-          format: fmt.value,
-          prix: fmt.prix,
-          mimeType: 'image/jpeg',
-          base64: base64,
-          fileName: prenom.replace(/[^a-z0-9]/gi, '_') + '.jpg'
-        })
-      })
-        .then(function (r) { return r.json(); })
-        .then(function (res) {
-          submitBtn.disabled = false;
-          if (res && res.success) {
-            msg.className = 'ok';
-            msg.textContent = 'Merci ' + prenom + ' ! Ta photo est bien arrivée. 🎩';
-            form.reset();
-            preview.style.display = 'none';
-            fileNameEl.textContent = '';
-            compressedDataUrl = null;
-            totalLine.textContent = '';
-          } else {
-            msg.className = 'err';
-            msg.textContent = 'Oups : ' + (res && res.error ? res.error : 'erreur inconnue') + '. Réessaie.';
-          }
-        })
-        .catch(function () {
-          submitBtn.disabled = false;
-          msg.className = 'err';
-          msg.textContent = 'Erreur de connexion, vérifie ton réseau et réessaie.';
-        });
-    });
-  </script>
 </body>
 </html>
