@@ -149,23 +149,23 @@
 
       <h2>Gravure photo sur bois</h2>
       <p class="intro-photo">Choisis tes modèles avec le bouton +. Pour chacun, tu peux ajouter <b>une photo</b> ou écrire <b>le texte à graver</b> (facultatif).</p>
-      <div class="produit" data-id="p10x10" data-court="10x10" data-prix="10">
+      <div class="produit" data-id="p10x10" data-court="10x10" data-prix="12">
         <div class="p-ligne">
-          <span class="p-nom">10 x 10 cm</span><span class="p-prix">10 €</span>
+          <span class="p-nom">10 x 10 cm</span><span class="p-prix">12 €</span>
           <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
         </div>
         <div class="slots"></div>
       </div>
-      <div class="produit" data-id="p10x15" data-court="10x15" data-prix="12">
+      <div class="produit" data-id="p10x15" data-court="10x15" data-prix="15">
         <div class="p-ligne">
-          <span class="p-nom">10 x 15 cm</span><span class="p-prix">12 €</span>
+          <span class="p-nom">10 x 15 cm</span><span class="p-prix">15 €</span>
           <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
         </div>
         <div class="slots"></div>
       </div>
-      <div class="produit" data-id="p13x18" data-court="13x18" data-prix="17">
+      <div class="produit" data-id="p13x18" data-court="13x18" data-prix="20">
         <div class="p-ligne">
-          <span class="p-nom">13 x 18 cm</span><span class="p-prix">17 €</span>
+          <span class="p-nom">13 x 18 cm</span><span class="p-prix">20 €</span>
           <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
         </div>
         <div class="slots"></div>
@@ -195,21 +195,9 @@
         </div>
         <div class="slots"></div>
       </div>
-      <div class="produit" data-id="boucles" data-court="Boucles" data-prix="10">
-        <div class="p-ligne">
-          <span class="p-nom">Boucles d'oreilles</span><span class="p-prix">10 €</span>
-          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
-        </div>
-        <div class="slots"></div>
-      </div>
-      <div class="produit" data-id="divers" data-court="Autre création" data-prix="">
-        <div class="p-ligne">
-          <span class="p-nom">Autre création</span><span class="p-prix devis">sur devis</span>
-          <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
-        </div>
-        <div class="p-detail"><input type="text" class="detail" maxlength="200" placeholder="Décris ce que tu souhaites"></div>
-        <div class="slots"></div>
-      </div>
+      <h2>Autre création (sur devis)</h2>
+      <label class="lbl" for="autreCreation">Une idée qui n'est pas dans la liste ? Décris-la ici, je te fais un devis.</label>
+      <textarea id="autreCreation" maxlength="1000" placeholder="Ex. : plaque de porte 20 x 10 cm avec nos prénoms, boîte à bijoux gravée…"></textarea>
 
       <div class="total" id="total"></div>
 
@@ -336,12 +324,17 @@
                      units: p.photos.map(function (ph) { return { photo: !!ph.dataUrl, texte: ph.texte.trim() }; }) });
         if (p.prix === '') devis = true; else total += Number(p.prix) * q;
       });
+      var autre = document.getElementById('autreCreation');
+      if (autre && autre.value.trim()) {
+        items.push({ id: 'divers', qty: 1, detail: autre.value.trim(), units: [{ photo: false, texte: '' }] });
+        devis = true;
+      }
       return { items: items, total: total, devis: devis };
     }
     function majTotal() {
       var r = lireProduits();
       if (!r.items.length) { totalEl.innerHTML = ''; return; }
-      totalEl.innerHTML = 'Total : ' + r.total + ' €' + (r.devis ? ' <small>+ partie sur devis</small>' : '');
+      totalEl.innerHTML = r.total ? 'Total : ' + r.total + ' €' + (r.devis ? ' <small>+ partie sur devis</small>' : '') : '<small>Sur devis</small>';
     }
 
     function compresser(file, ok, ko) {
@@ -362,6 +355,9 @@
       reader.readAsDataURL(file);
     }
 
+    var autreEl = document.getElementById('autreCreation');
+    if (autreEl) autreEl.addEventListener('input', majTotal);
+
     // ----- Date souhaitée : pas dans le passé -----
     var delaiEl = document.getElementById('delai');
     if (delaiEl) {
@@ -377,7 +373,7 @@
       e.preventDefault();
       if (typeof ENVOI_URL === 'undefined') { afficher('err', 'Configuration manquante (config.js).'); return; }
       var r = lireProduits();
-      if (!r.items.length) { afficher('err', 'Choisis au moins un modèle avec le bouton +.'); return; }
+      if (!r.items.length) { afficher('err', 'Choisis au moins un modèle avec le bouton +, ou décris ton idée dans « Autre création ».'); return; }
       if (produits.some(function (p) { return p.photos.some(function (ph) { return ph.wait; }); })) {
         afficher('err', 'Photo en préparation, réessaie dans 2 secondes.'); return;
       }

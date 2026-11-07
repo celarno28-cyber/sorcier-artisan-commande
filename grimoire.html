@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Le Sorcier Artisan — Le grimoire du moment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Courgette&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brass: #c9974b; --brass-dark: #8a6a2f; --copper: #b56a3c;
+      --ink: #1b140d; --parchment: #ecdfc4; --soft: #d8c9a3; --field: #12100b;
+      --ok: #9fd88c; --err: #e0836f;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+      padding: 24px 16px 40px;
+      background: radial-gradient(circle at 50% 0%, #3a2a18 0%, #1b140d 60%), var(--ink);
+      background-attachment: fixed;
+      font-family: 'Cormorant Garamond', Georgia, serif; font-size: 18px; color: var(--parchment);
+    }
+    .card {
+      width: 100%; max-width: 460px; position: relative;
+      background: linear-gradient(180deg, #2a1f14, #1b140d);
+      border: 3px solid var(--brass); border-radius: 10px;
+      box-shadow: 0 0 0 6px #0d0904, 0 10px 40px rgba(0,0,0,.6), inset 0 0 30px rgba(201,151,75,.08);
+      padding: 28px 20px 26px;
+    }
+    .card::before, .card::after { content: "⚙"; position: absolute; top: 8px; color: var(--brass-dark); font-size: 20px; }
+    .card::before { left: 10px; } .card::after { right: 10px; }
+    h1 { font-family: 'Cinzel Decorative', serif; font-size: 24px; text-align: center; color: var(--brass);
+         margin: 6px 0 4px; text-shadow: 0 1px 0 #000; }
+    .subtitle { text-align: center; font-size: 19px; color: var(--soft); margin: 0 0 6px; line-height: 1.35; }
+    .bois { text-align: center; font-style: italic; font-size: 16px; color: #b7a67f; margin: 0 0 18px; }
+    .back { display: inline-block; color: var(--soft); text-decoration: none; font-size: 16px; margin-bottom: 6px; }
+    .back:hover { color: var(--brass); }
+    h2 { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--brass); letter-spacing: .3px;
+         margin: 26px 0 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(201,151,75,.35); }
+    label.lbl { display: block; font-size: 17px; color: var(--brass); margin: 14px 0 6px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row2 > div { min-width: 0; }
+    .cp-ville { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
+    input[type=text], input[type=tel], input[type=email], input[type=date], textarea {
+      width: 100%; padding: 12px 13px; font-size: 17px; font-family: inherit;
+      background: var(--field); border: 1px solid var(--brass-dark); border-radius: 6px; color: var(--parchment);
+    }
+    input[type=date] { color-scheme: dark; min-height: 48px; }
+    textarea { min-height: 80px; resize: vertical; }
+    input:focus, textarea:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .hint { font-size: 15px; color: #b7a67f; font-style: italic; margin: 6px 0 0; }
+    .intro-photo { font-size: 16px; color: var(--soft); margin: 0 0 4px; line-height: 1.35; }
+
+    .produit { margin-top: 8px; padding: 11px 12px; background: var(--field); border: 1px solid var(--brass-dark);
+               border-radius: 6px; transition: border-color .15s, box-shadow .15s; }
+    .produit.actif { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .produit.manque { border-color: var(--err); box-shadow: 0 0 0 2px rgba(224,131,111,.3); }
+    .p-ligne { display: flex; align-items: center; gap: 10px; }
+    .p-nom { flex: 1; min-width: 0; line-height: 1.2; }
+    .p-prix { color: var(--brass); font-weight: 700; white-space: nowrap; }
+    .p-prix.devis { font-weight: 600; font-style: italic; font-size: 16px; }
+    .stepper { display: flex; align-items: center; border: 1px solid var(--brass-dark); border-radius: 6px; overflow: hidden; }
+    .stepper button { width: 38px; height: 38px; border: 0; background: #2a1f14; color: var(--brass);
+                      font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; }
+    .stepper button:active { background: #3a2a18; }
+    .stepper .qte { width: 30px; text-align: center; font-weight: 700; }
+    .p-detail { display: none; margin-top: 10px; }
+    .produit.actif .p-detail { display: block; }
+
+    /* Pour chaque modèle : une photo OU un texte à graver */
+    .slots { margin-top: 4px; }
+    .slots:empty { display: none; }
+    .unite { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(201,151,75,.3); }
+    .u-titre { font-size: 15px; color: var(--soft); margin-bottom: 6px; }
+    .u-titre b { color: var(--brass); }
+    .u-corps { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: stretch; }
+    .u-texte { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .u-texte .ou { font-size: 14px; font-style: italic; color: #b7a67f; }
+    .u-texte textarea { min-height: 0; flex: 1; padding: 8px 10px; font-size: 16px; resize: none; }
+    .unite.vide-err .slot { border-color: var(--err); color: var(--err); }
+    .unite.vide-err textarea { border-color: var(--err); }
+    .slot .retirer { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 50%; border: 0;
+                     background: rgba(0,0,0,.75); color: #fff; font-size: 17px; line-height: 26px; cursor: pointer; padding: 0; z-index: 2; }
+    .slot { position: relative; aspect-ratio: 1; border: 2px dashed var(--brass-dark); border-radius: 6px;
+            overflow: hidden; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; color: var(--brass); font-size: 14px; line-height: 1.15; padding: 4px; background: rgba(255,255,255,.02); }
+    .slot input { display: none; }
+    .slot .plus-photo { font-size: 26px; line-height: 1; margin-bottom: 2px; }
+    .slot.rempli { border-style: solid; border-color: var(--brass); padding: 0; }
+    .slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .slot .tag { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.7); color: var(--parchment);
+                 font-size: 13px; padding: 3px 2px; }
+    .slot.vide-err { border-color: var(--err); color: var(--err); }
+    .slot.wait::after { content: ""; position: absolute; inset: 0; margin: auto; width: 22px; height: 22px;
+                        border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf; border-radius: 50%; animation: spin .8s linear infinite; }
+
+    .total { text-align: center; margin-top: 18px; font-size: 20px; color: var(--brass);
+             font-family: 'Cinzel Decorative', serif; min-height: 26px; }
+    .total small { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--soft); font-style: italic; }
+
+    .consent { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; font-size: 15px; color: #c9bd9f; line-height: 1.4; }
+    .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brass); flex-shrink: 0; }
+    button.submit {
+      width: 100%; margin-top: 20px; padding: 15px; font-family: 'Cinzel Decorative', serif; font-size: 17px;
+      background: linear-gradient(180deg, var(--copper), #7a3f22); color: #f4e9cf; border: 1px solid #5a2f18;
+      border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 #4a2415, 0 6px 12px rgba(0,0,0,.4);
+    }
+    button.submit:active { transform: translateY(2px); box-shadow: 0 2px 0 #4a2415; }
+    button.submit:disabled { opacity: .6; cursor: default; }
+    .msg { margin-top: 16px; text-align: center; font-size: 17px; min-height: 22px; line-height: 1.4; }
+    .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf;
+               border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .merci { display: none; text-align: center; padding: 10px 4px; }
+    .merci h2 { border: 0; font-size: 20px; margin-top: 10px; }
+    .merci p { color: var(--soft); line-height: 1.45; }
+    .merci a { color: var(--brass); }
+    @media (max-width: 360px) { .row2 { grid-template-columns: 1fr; } }
+  
+    /* ----- Le grimoire du moment : boules de Noël ----- */
+    .offre { text-align: center; margin: 4px 0 6px; padding: 10px 12px; border: 1px dashed var(--brass); border-radius: 8px;
+             color: var(--parchment); font-size: 18px; line-height: 1.35; }
+    .offre b { color: var(--brass); }
+    .modele { margin-top: 14px; padding: 12px; background: var(--field); border: 1px solid var(--brass-dark); border-radius: 8px;
+              transition: border-color .15s, box-shadow .15s; }
+    .modele.actif { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .m-haut { display: flex; gap: 12px; align-items: center; }
+    .m-img { width: 96px; height: 96px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--brass-dark); cursor: zoom-in; }
+    .m-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .m-info { flex: 1; min-width: 0; }
+    .m-nom { font-family: 'Cinzel Decorative', serif; color: var(--brass); font-size: 16px; line-height: 1.2; }
+    .m-prix { color: var(--soft); font-size: 16px; margin: 2px 0 8px; }
+    .boules { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+    .boules:empty { display: none; }
+    .boule { margin-top: 8px; }
+    .apercu { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid var(--brass-dark); background: #000; }
+    .apercu img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .apercu .gravure { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap;
+                       font-family: 'Courgette', cursive; color: #7a3d1a; line-height: 1;
+                       text-shadow: 0 1px 0 rgba(255,240,210,.55), 0 -1px 0 rgba(60,25,8,.35); pointer-events: none; }
+    .apercu .gravure.vide { color: rgba(122,61,26,.45); }
+    .boule label { display: block; font-size: 15px; color: var(--soft); margin: 6px 0 4px; }
+    .boule input[type=text] { padding: 9px 10px; font-size: 16px; }
+    .compteur { float: right; font-size: 13px; color: #8f8063; }
+    .zoom { display: none; position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.85); align-items: center; justify-content: center; padding: 16px; }
+    .zoom.ouvert { display: flex; }
+    .zoom img { max-width: 100%; max-height: 90vh; border: 3px solid var(--brass); border-radius: 8px; }
+    @media (max-width: 360px) { .boules { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a class="back" href="photo.html">‹ Retour</a>
+    <h1>Le grimoire du moment</h1>
+    <p class="subtitle">Boules de Noël en bois gravées à ton prénom</p>
+    <p class="offre"><b>6 €</b> la boule · <b>10 € les 2</b><br><small>Choisis tes modèles, écris un prénom par boule (12 caractères max).</small></p>
+
+    <form id="commande" data-type="livraison"
+          data-merci="Merci {prenom} ! Ta commande de boules de Noël est bien enregistrée. Je te recontacte rapidement pour la valider avec toi.">
+
+      <h2>Choisis tes boules</h2>
+      <div id="modeles"></div>
+      <div class="total" id="total"></div>
+
+      <h2>Tes coordonnées</h2>
+      <div class="row2">
+        <div><label class="lbl" for="prenom">Prénom</label><input type="text" id="prenom" autocomplete="given-name" required></div>
+        <div><label class="lbl" for="nom">Nom</label><input type="text" id="nom" autocomplete="family-name" required></div>
+      </div>
+      <label class="lbl" for="telephone">Téléphone</label>
+      <input type="tel" id="telephone" autocomplete="tel" placeholder="06 12 34 56 78" required>
+      <label class="lbl" for="email">E-mail</label>
+      <input type="email" id="email" autocomplete="email" placeholder="toi@exemple.fr" required>
+
+      <h2>Adresse de livraison</h2>
+      <label class="lbl" for="adresse">Adresse</label>
+      <input type="text" id="adresse" autocomplete="street-address" placeholder="N° et rue" required>
+      <div class="cp-ville">
+        <div><label class="lbl" for="cp">Code postal</label><input type="text" id="cp" autocomplete="postal-code" inputmode="numeric" required></div>
+        <div><label class="lbl" for="ville">Ville</label><input type="text" id="ville" autocomplete="address-level2" required></div>
+      </div>
+
+      <h2>Délai</h2>
+      <label class="lbl" for="delai">Date à laquelle tu souhaites recevoir ta commande</label>
+      <input type="date" id="delai" required>
+      <p class="hint">Compte au moins 3 jours pour l'envoi postal.</p>
+
+      <label class="lbl" for="precisions">Précisions (facultatif)</label>
+      <textarea id="precisions" maxlength="1000" placeholder="Une remarque, une idée cadeau…"></textarea>
+
+      <label class="consent">
+        <input type="checkbox" required>
+        <span>J'accepte que CELARNO28 utilise mes prénoms, textes et coordonnées pour traiter et livrer ma commande.</span>
+      </label>
+      <button type="submit" class="submit" id="envoyer">Envoyer ma commande</button>
+      <div class="msg" id="msg"></div>
+    </form>
+    <div class="merci" id="merci">
+      <h2>Merci ! 🎄</h2>
+      <p id="merciTexte"></p>
+      <p><a href="#" id="encore">Passer une autre commande</a></p>
+    </div>
+  </div>
+  <div class="zoom" id="zoom"><img alt=""></div>
+
+  <script src="config.js"></script>
+  <script>
+    // ===== RÉGLAGES (à modifier ici) =====
+    var PRIX_UNE = 6;          // prix d'une boule
+    var PRIX_DEUX = 10;        // prix de 2 boules
+    var MAX_CARACTERES = 12;   // longueur max du prénom
+    var MAX_BOULES = 30;       // boules max par commande
+    // x, y = centre du bandeau où s'affiche le prénom (en % de l'image) ; l = largeur utile du bandeau (%)
+    var MODELES = [
+      { id: 'bouleCerfSapin', nom: 'Cerf & sapin',  img: 'boule-cerf-sapin.jpg', vierge: 'boule-cerf-sapin-vierge.jpg', x: 48.3, y: 57.7, l: 62 },
+      { id: 'bouleFlocons',   nom: 'Flocons',       img: 'boule-flocons.jpg',    vierge: 'boule-flocons-vierge.jpg',    x: 54.2, y: 60.0, l: 66 },
+      { id: 'bouleTeteCerf',  nom: 'Tête de cerf',  img: 'boule-tete-cerf.jpg',  vierge: 'boule-tete-cerf-vierge.jpg',  x: 50.0, y: 58.0, l: 64 },
+      { id: 'bouleHoux',      nom: 'Houx',          img: 'boule-houx.jpg',       vierge: 'boule-houx-vierge.jpg',       x: 48.8, y: 56.3, l: 64 }
+    ];
+    // =====================================
+
+    var form = document.getElementById('commande');
+    var TYPE = form.getAttribute('data-type');
+    var msg = document.getElementById('msg');
+    var btn = document.getElementById('envoyer');
+    var totalEl = document.getElementById('total');
+    var zoom = document.getElementById('zoom');
+    zoom.addEventListener('click', function () { zoom.classList.remove('ouvert'); });
+
+    function nbBoules() { return MODELES.reduce(function (n, m) { return n + m.noms.length; }, 0); }
+    function prixTotal(n) { return Math.floor(n / 2) * PRIX_DEUX + (n % 2) * PRIX_UNE; }
+
+    var zone = document.getElementById('modeles');
+    MODELES.forEach(function (m, idx) {
+      m.noms = [];
+      var el = document.createElement('div'); el.className = 'modele';
+      el.innerHTML =
+        '<div class="m-haut">' +
+          '<div class="m-img"><img src="' + m.img + '" alt="Boule ' + m.nom + '" loading="lazy"></div>' +
+          '<div class="m-info"><div class="m-nom">' + (idx + 1) + '. ' + m.nom + '</div>' +
+          '<div class="m-prix">' + PRIX_UNE + ' € la boule</div>' +
+          '<div class="stepper" style="display:inline-flex"><button type="button" class="moins" aria-label="Retirer une boule">−</button>' +
+          '<span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter une boule">+</button></div></div>' +
+        '</div><div class="boules"></div>';
+      zone.appendChild(el);
+      m.el = el; m.qteEl = el.querySelector('.qte'); m.boulesEl = el.querySelector('.boules');
+      el.querySelector('.m-img').addEventListener('click', function () {
+        zoom.querySelector('img').src = m.img; zoom.classList.add('ouvert');
+      });
+      el.querySelector('.plus').addEventListener('click', function () {
+        if (nbBoules() >= MAX_BOULES) { afficher('err', MAX_BOULES + ' boules maximum par commande.'); return; }
+        m.noms.push(''); maj(m, true);
+      });
+      el.querySelector('.moins').addEventListener('click', function () {
+        if (!m.noms.length) return; m.noms.pop(); maj(m, false);
+      });
+    });
+
+    function maj(m, focusDernier) {
+      m.qteEl.textContent = m.noms.length;
+      m.el.classList.toggle('actif', m.noms.length > 0);
+      dessiner(m);
+      majTotal(); afficher('', '');
+      if (focusDernier) { var ins = m.boulesEl.querySelectorAll('input'); if (ins.length) ins[ins.length - 1].focus(); }
+    }
+
+    function ajusterTexte(span, m, box) {
+      // taille du texte : la plus grande qui tient dans le bandeau
+      var w = box.clientWidth; if (!w) return;
+      span.style.left = m.x + '%'; span.style.top = m.y + '%';
+      var taille = w * 0.115; span.style.fontSize = taille + 'px';
+      var max = w * m.l / 100;
+      if (span.offsetWidth > max) span.style.fontSize = (taille * max / span.offsetWidth) + 'px';
+    }
+
+    function dessiner(m) {
+      m.boulesEl.innerHTML = '';
+      m.noms.forEach(function (nom, i) {
+        var b = document.createElement('div'); b.className = 'boule';
+        var ap = document.createElement('div'); ap.className = 'apercu';
+        var im = document.createElement('img'); im.src = m.vierge; im.alt = 'Aperçu ' + m.nom;
+        var g = document.createElement('span'); g.className = 'gravure';
+        ap.appendChild(im); ap.appendChild(g);
+        var lab = document.createElement('label');
+        var cpt = document.createElement('span'); cpt.className = 'compteur';
+        lab.textContent = 'Boule ' + (i + 1) + ' : prénom';
+        lab.appendChild(cpt);
+        var inp = document.createElement('input');
+        inp.type = 'text'; inp.maxLength = MAX_CARACTERES; inp.value = nom; inp.required = true;
+        inp.placeholder = 'Ex. : Léa'; inp.setAttribute('aria-label', 'Prénom pour la boule ' + m.nom + ' n°' + (i + 1));
+        function rendu() {
+          var v = inp.value;
+          g.textContent = v || 'Prénom';
+          g.classList.toggle('vide', !v);
+          cpt.textContent = v.length + '/' + MAX_CARACTERES;
+          ajusterTexte(g, m, ap);
+        }
+        inp.addEventListener('input', function () { m.noms[i] = inp.value; rendu(); });
+        im.addEventListener('load', rendu);
+        b.appendChild(ap); b.appendChild(lab); b.appendChild(inp);
+        m.boulesEl.appendChild(b);
+        rendu();
+      });
+    }
+    window.addEventListener('resize', function () { MODELES.forEach(function (m) { dessiner(m); }); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { MODELES.forEach(function (m) { if (m.noms.length) dessiner(m); }); });
+
+    function majTotal() {
+      var n = nbBoules();
+      if (!n) { totalEl.innerHTML = ''; return; }
+      var t = prixTotal(n);
+      totalEl.innerHTML = 'Total : ' + t + ' €<br><small>' + n + ' boule' + (n > 1 ? 's' : '') +
+        (n >= 2 ? ' · tarif 2 pour ' + PRIX_DEUX + ' € appliqué' : ' · ajoute-en une 2ᵉ : les 2 pour ' + PRIX_DEUX + ' €') + '</small>';
+    }
+
+    var delaiEl = document.getElementById('delai');
+    var t0 = new Date(); t0.setDate(t0.getDate() + 3); t0.setMinutes(t0.getMinutes() - t0.getTimezoneOffset());
+    delaiEl.min = t0.toISOString().slice(0, 10);
+
+    function afficher(cls, html) { msg.className = 'msg ' + cls; msg.innerHTML = html; }
+    function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (typeof ENVOI_URL === 'undefined') { afficher('err', 'Configuration manquante (config.js).'); return; }
+      var n = nbBoules();
+      if (!n) { afficher('err', 'Choisis au moins une boule avec le bouton +.'); return; }
+      var items = [];
+      MODELES.forEach(function (m) {
+        if (!m.noms.length) return;
+        items.push({ id: m.id, qty: m.noms.length, detail: '',
+                     units: m.noms.map(function (x) { return { photo: false, texte: x.trim() }; }) });
+      });
+      var donnees = {
+        type: TYPE, grimoire: true, totalClient: prixTotal(n),
+        prenom: val('prenom'), nom: val('nom'), telephone: val('telephone'), email: val('email'),
+        adresse: val('adresse'), cp: val('cp'), ville: val('ville'), delai: val('delai'), precisions: val('precisions'),
+        items: items, photos: []
+      };
+      btn.disabled = true;
+      afficher('', '<span class="spinner"></span>Envoi en cours… ne ferme pas la page');
+      fetch(ENVOI_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(donnees) })
+        .then(function (rep) { return rep.json(); })
+        .then(function (res) {
+          btn.disabled = false;
+          if (res && res.success) {
+            document.getElementById('merciTexte').innerHTML = form.getAttribute('data-merci').replace('{prenom}', donnees.prenom);
+            form.style.display = 'none';
+            document.getElementById('merci').style.display = 'block';
+            window.scrollTo(0, 0);
+          } else {
+            afficher('err', 'Oups : ' + (res && res.error ? res.error : 'erreur inconnue'));
+          }
+        })
+        .catch(function () { btn.disabled = false; afficher('err', 'Erreur de connexion, vérifie ton réseau et réessaie.'); });
+    });
+
+    document.getElementById('encore').addEventListener('click', function (e) {
+      e.preventDefault();
+      form.reset();
+      MODELES.forEach(function (m) { m.noms = []; maj(m, false); });
+      delaiEl.min = t0.toISOString().slice(0, 10);
+      document.getElementById('merci').style.display = 'none';
+      form.style.display = 'block';
+      window.scrollTo(0, 0);
+    });
+  </script>
+</body>
+</html>
