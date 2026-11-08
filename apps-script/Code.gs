@@ -1,5 +1,5 @@
 /**
- * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v6)
+ * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v6.1)
  * ==============================================================
  * Les formulaires (festival.html, livraison.html et grimoire.html) sont hébergés sur GitHub Pages.
  * Les commandes du « grimoire du moment » (boules de Noël) arrivent dans l'onglet Livraison.
@@ -533,9 +533,13 @@ function lettre_(n) {
 
 // ================== RÉCAPITULATIF PAR E-MAIL ==================
 
-/** Rappel de la routine, ajouté en bas de chaque e-mail du matin (+ commande test le lundi). */
+/** Rappel de la routine, ajouté en bas de chaque e-mail du matin (+ commande test le lundi,
+ *  + ménage de l'album photos le premier lundi de janvier, avril, juillet et octobre). */
 function blocRoutine_(tz) {
   var lundi = Utilities.formatDate(new Date(), tz, 'u') === '1';   // 1 = lundi
+  var jour = Number(Utilities.formatDate(new Date(), tz, 'd'));
+  var mois = Number(Utilities.formatDate(new Date(), tz, 'M'));
+  var menage = lundi && jour <= 7 && (mois % 3 === 1);              // 1er lundi du trimestre
   var html = '<div style="margin-top:16px;padding:10px 12px;border:1px solid #c9974b;border-radius:6px;background:#fbf6ea">' +
     '<b>Ta routine du jour</b><br>' +
     '☐ Recontacter les nouveaux clients, puis cocher <b>Répondu</b><br>' +
@@ -544,6 +548,12 @@ function blocRoutine_(tz) {
     html += '<br><br>🧪 <b>C\'est lundi : fais ta commande test</b> (30 secondes) depuis ton téléphone sur ' +
       '<a href="' + LIEN_FORMULAIRE + '">' + LIEN_FORMULAIRE.replace('https://', '') + '</a>, ' +
       'vérifie qu\'elle arrive dans la Sheet, puis supprime la ligne.';
+  }
+  if (menage) {
+    html += '<br><br>🧹 <b>Ménage du trimestre : pense à vider l\'album photos</b> « ' + ALBUM_TITLE + ' » ' +
+      '(<a href="https://photos.google.com/albums">ouvrir Google Photos</a>). Supprime les photos des commandes ' +
+      'remises ou envoyées il y a plus de 3 mois, comme promis sur la page confidentialité. ' +
+      'Pour libérer vraiment la place, vide aussi la corbeille de Google Photos.';
   }
   return html + '</div>';
 }
