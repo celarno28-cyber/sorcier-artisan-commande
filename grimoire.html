@@ -120,7 +120,7 @@
     .merci a { color: var(--brass); }
     @media (max-width: 360px) { .row2 { grid-template-columns: 1fr; } }
   
-    /* ----- Le grimoire du moment : boules de Noël ----- */
+    /* ----- Le grimoire du moment (collection : voir collection.js) ----- */
     .offre { text-align: center; margin: 4px 0 6px; padding: 10px 12px; border: 1px dashed var(--brass); border-radius: 8px;
              color: var(--parchment); font-size: 18px; line-height: 1.35; }
     .offre b { color: var(--brass); }
@@ -155,13 +155,13 @@
   <div class="card">
     <a class="back" href="photo.html">‹ Retour</a>
     <h1>Le grimoire du moment</h1>
-    <p class="subtitle">Boules de Noël en bois gravées à ton prénom</p>
-    <p class="offre"><b>6 €</b> la boule · <b>10 € les 2</b> · <b>envoi compris</b><br><span id="limite" style="color:var(--brass)">🎄 Commandes jusqu'au 19 décembre</span><br><small>Choisis tes modèles, écris un prénom par boule (12 caractères max).</small></p>
+    <p class="subtitle" id="sousTitre"></p>
+    <p class="offre" id="offre"></p>
 
     <form id="commande" data-type="livraison"
-          data-merci="Merci {prenom} ! Ta commande de boules de Noël est bien enregistrée. Je te recontacte rapidement pour la valider avec toi.">
+          data-merci="Merci {prenom} ! Ta commande est bien enregistrée. Je te recontacte rapidement pour la valider avec toi.">
 
-      <h2>Choisis tes boules</h2>
+      <h2 id="titreChoix">Choisis tes modèles</h2>
       <div id="modeles"></div>
       <div class="total" id="total"></div>
 
@@ -199,7 +199,7 @@
       <div class="msg" id="msg"></div>
     </form>
     <div class="merci" id="merci">
-      <h2>Merci ! 🎄</h2>
+      <h2 id="titreMerci">Merci !</h2>
       <p id="merciTexte"></p>
       <p><a href="#" id="encore">Passer une autre commande</a></p>
     </div>
@@ -207,39 +207,37 @@
   <div class="zoom" id="zoom"><img alt=""></div>
 
   <script src="config.js"></script>
+  <script src="collection.js"></script>
   <script>
-    // ===== RÉGLAGES (à modifier ici) =====
-    var PRIX_UNE = 6;          // prix d'une boule
-    var PRIX_DEUX = 10;        // prix de 2 boules
-    var MAX_CARACTERES = 12;   // longueur max du prénom
-    var MAX_BOULES = 30;       // boules max par commande
-    var DATE_LIMITE = '2026-12-19';   // dernier jour de commande (inclus) — changer pour l'an prochain
-    // x, y = centre du bandeau où s'affiche le prénom (en % de l'image) ; l = largeur utile du bandeau (%)
-    var MODELES = [
-      { id: 'bouleCerfSapin', nom: 'Cerf & sapin',  img: 'boule-cerf-sapin.jpg', vierge: 'boule-cerf-sapin-vierge.jpg', x: 48.3, y: 57.7, l: 62 },
-      { id: 'bouleFlocons',   nom: 'Flocons',       img: 'boule-flocons.jpg',    vierge: 'boule-flocons-vierge.jpg',    x: 54.2, y: 60.0, l: 66 },
-      { id: 'bouleTeteCerf',  nom: 'Tête de cerf',  img: 'boule-tete-cerf.jpg',  vierge: 'boule-tete-cerf-vierge.jpg',  x: 50.0, y: 58.0, l: 64 },
-      { id: 'bouleHoux',      nom: 'Houx',          img: 'boule-houx.jpg',       vierge: 'boule-houx-vierge.jpg',       x: 48.8, y: 56.3, l: 64 }
-    ];
-    // =====================================
+    // Réglages de la collection : voir le fichier collection.js
+    var C = COLLECTION;
+    var PRIX_UNE = C.prixUne, PRIX_DEUX = C.prixDeux, MAX_CARACTERES = C.maxCaracteres;
+    var MAX_BOULES = 30;       // pièces max par commande
+    var MODELES = C.modeles;
+    var U = C.unite, US = C.unites;
+    function pluriel(n) { return n > 1 ? US : U; }
+    function maj1(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+    document.title = 'Le Sorcier Artisan — ' + C.nom;
+    document.getElementById('sousTitre').textContent = C.sousTitre;
+    document.getElementById('titreChoix').textContent = 'Choisis tes ' + US;
+    document.getElementById('titreMerci').textContent = 'Merci ! ' + C.emoji;
+    document.getElementById('offre').innerHTML = '<b>' + PRIX_UNE + ' €</b> ' + (C.article === 'un' ? 'le ' : 'la ') + U +
+      (PRIX_DEUX ? ' · <b>' + PRIX_DEUX + ' € les 2</b>' : '') + ' · <b>envoi compris</b><br>' +
+      '<span id="limite" style="color:var(--brass)">' + C.emoji + ' Commandes jusqu\'au ' + C.dateTexte() + '</span><br>' +
+      '<small>Choisis tes modèles, écris un ' + C.champ + ' par ' + U + ' (' + MAX_CARACTERES + ' caractères max).</small>';
 
     var form = document.getElementById('commande');
 
-    // ----- Date limite : après le DATE_LIMITE, la page affiche que les commandes sont closes -----
-    (function () {
-      var p = DATE_LIMITE.split('-');
-      var fin = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]), 23, 59, 59);
-      var mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-      document.getElementById('limite').textContent = '🎄 Commandes jusqu\'au ' + Number(p[2]) + ' ' + mois[Number(p[1]) - 1];
-      if (new Date() > fin) {
-        form.style.display = 'none';
-        var clos = document.createElement('div'); clos.className = 'merci'; clos.style.display = 'block';
-        clos.innerHTML = '<h2>Commandes terminées 🎄</h2><p>Les commandes de boules de Noël sont closes pour cette année. ' +
-          'Merci à toutes et à tous !<br>Tu peux toujours commander mes autres créations.</p><p><a href="photo.html">Voir les autres commandes</a></p>';
-        form.parentNode.insertBefore(clos, form);
-        document.querySelector('.offre').style.display = 'none';
-      }
-    })();
+    // ----- Date limite : après C.dateLimite, la page affiche que les commandes sont closes -----
+    if (!C.ouverte()) {
+      form.style.display = 'none';
+      var clos = document.createElement('div'); clos.className = 'merci'; clos.style.display = 'block';
+      clos.innerHTML = '<h2>Commandes terminées ' + C.emoji + '</h2><p>' + C.messageFin +
+        '<br>Une nouvelle collection arrive bientôt dans le grimoire !<br>En attendant, tu peux commander mes autres créations.</p>' +
+        '<p><a href="photo.html">Voir les autres commandes</a></p>';
+      form.parentNode.insertBefore(clos, form);
+      document.getElementById('offre').style.display = 'none';
+    }
     var TYPE = form.getAttribute('data-type');
     var msg = document.getElementById('msg');
     var btn = document.getElementById('envoyer');
@@ -248,7 +246,7 @@
     zoom.addEventListener('click', function () { zoom.classList.remove('ouvert'); });
 
     function nbBoules() { return MODELES.reduce(function (n, m) { return n + m.noms.length; }, 0); }
-    function prixTotal(n) { return Math.floor(n / 2) * PRIX_DEUX + (n % 2) * PRIX_UNE; }
+    function prixTotal(n) { return C.prix(n); }
 
     var zone = document.getElementById('modeles');
     MODELES.forEach(function (m, idx) {
@@ -256,11 +254,11 @@
       var el = document.createElement('div'); el.className = 'modele';
       el.innerHTML =
         '<div class="m-haut">' +
-          '<div class="m-img"><img src="' + m.img + '" alt="Boule ' + m.nom + '" loading="lazy"></div>' +
+          '<div class="m-img"><img src="' + m.img + '" alt="' + maj1(U) + ' ' + m.nom + '" loading="lazy"></div>' +
           '<div class="m-info"><div class="m-nom">' + (idx + 1) + '. ' + m.nom + '</div>' +
-          '<div class="m-prix">' + PRIX_UNE + ' € la boule</div>' +
-          '<div class="stepper" style="display:inline-flex"><button type="button" class="moins" aria-label="Retirer une boule">−</button>' +
-          '<span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter une boule">+</button></div></div>' +
+          '<div class="m-prix">' + PRIX_UNE + ' € ' + (C.article === 'un' ? 'le ' : 'la ') + U + '</div>' +
+          '<div class="stepper" style="display:inline-flex"><button type="button" class="moins" aria-label="Retirer">−</button>' +
+          '<span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div></div>' +
         '</div><div class="boules"></div>';
       zone.appendChild(el);
       m.el = el; m.qteEl = el.querySelector('.qte'); m.boulesEl = el.querySelector('.boules');
@@ -268,7 +266,7 @@
         zoom.querySelector('img').src = m.img; zoom.classList.add('ouvert');
       });
       el.querySelector('.plus').addEventListener('click', function () {
-        if (nbBoules() >= MAX_BOULES) { afficher('err', MAX_BOULES + ' boules maximum par commande.'); return; }
+        if (nbBoules() >= MAX_BOULES) { afficher('err', MAX_BOULES + ' ' + US + ' maximum par commande.'); return; }
         m.noms.push(''); maj(m, true);
       });
       el.querySelector('.moins').addEventListener('click', function () {
@@ -304,14 +302,14 @@
         ap.appendChild(im); ap.appendChild(g);
         var lab = document.createElement('label');
         var cpt = document.createElement('span'); cpt.className = 'compteur';
-        lab.textContent = 'Boule ' + (i + 1) + ' : prénom';
+        lab.textContent = maj1(U) + ' ' + (i + 1) + ' : ' + C.champ;
         lab.appendChild(cpt);
         var inp = document.createElement('input');
         inp.type = 'text'; inp.maxLength = MAX_CARACTERES; inp.value = nom; inp.required = true;
-        inp.placeholder = 'Ex. : Léa'; inp.setAttribute('aria-label', 'Prénom pour la boule ' + m.nom + ' n°' + (i + 1));
+        inp.placeholder = 'Ex. : ' + C.exemple; inp.setAttribute('aria-label', maj1(C.champ) + ' pour ' + U + ' ' + m.nom + ' n°' + (i + 1));
         function rendu() {
           var v = inp.value;
-          g.textContent = v || 'Prénom';
+          g.textContent = v || maj1(C.champ);
           g.classList.toggle('vide', !v);
           cpt.textContent = v.length + '/' + MAX_CARACTERES;
           ajusterTexte(g, m, ap);
@@ -341,8 +339,9 @@
       var n = nbBoules();
       if (!n) { totalEl.innerHTML = ''; return; }
       var t = prixTotal(n);
-      totalEl.innerHTML = 'Total : ' + t + ' € <small>envoi compris</small><br><small>' + n + ' boule' + (n > 1 ? 's' : '') +
-        (n >= 2 ? ' · tarif 2 pour ' + PRIX_DEUX + ' € appliqué' : ' · ajoute-en une 2ᵉ : les 2 pour ' + PRIX_DEUX + ' €') + '</small>';
+      totalEl.innerHTML = 'Total : ' + t + ' € <small>envoi compris</small><br><small>' + n + ' ' + pluriel(n) +
+        (!PRIX_DEUX ? '' : n >= 2 ? ' · tarif 2 pour ' + PRIX_DEUX + ' € appliqué'
+                                  : ' · ajoute-en ' + C.article + ' 2ᵉ : les 2 pour ' + PRIX_DEUX + ' €') + '</small>';
     }
 
     var delaiEl = document.getElementById('delai');
@@ -365,7 +364,7 @@
       e.preventDefault();
       if (typeof ENVOI_URL === 'undefined') { afficher('err', 'Configuration manquante (config.js).'); return; }
       var n = nbBoules();
-      if (!n) { afficher('err', 'Choisis au moins une boule avec le bouton +.'); return; }
+      if (!n) { afficher('err', 'Choisis au moins ' + C.article + ' ' + U + ' avec le bouton +.'); return; }
       var items = [];
       MODELES.forEach(function (m) {
         if (!m.noms.length) return;

@@ -141,9 +141,20 @@
         <path d="M10 8 H36 a4 4 0 0 1 4 4 V42 H14 a4 4 0 0 1 -4 -4 Z"/><path d="M10 38 a4 4 0 0 1 4 -4 H40"/>
         <path d="M25 13 L26.8 18.2 L32 20 L26.8 21.8 L25 27 L23.2 21.8 L18 20 L23.2 18.2 Z"/>
       </svg>
-      <div><strong>Le grimoire du moment</strong><span>Boules de Noël gravées à ton prénom · jusqu'au 19 décembre</span></div>
+      <div><strong>Le grimoire du moment</strong><span id="grimoireTexte">La collection du moment</span></div>
       <span class="fleche">›</span>
     </a>
   </div>
+  <script src="collection.js"></script>
+  <script>
+    // Texte du bouton « Le grimoire du moment », d'après la collection en cours (collection.js)
+    (function () {
+      var t = document.getElementById('grimoireTexte');
+      if (typeof COLLECTION === 'undefined' || !t) return;
+      t.textContent = COLLECTION.ouverte()
+        ? COLLECTION.sousTitre + ' · jusqu\'au ' + COLLECTION.dateTexte()
+        : 'Nouvelle collection bientôt…';
+    })();
+  </script>
 </body>
 </html>
