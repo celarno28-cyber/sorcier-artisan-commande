@@ -1,5 +1,5 @@
 /**
- * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v5)
+ * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v5.1)
  * ==============================================================
  * Les formulaires (festival.html, livraison.html et grimoire.html) sont hébergés sur GitHub Pages.
  * Les commandes du « grimoire du moment » (boules de Noël) arrivent dans l'onglet Livraison.
@@ -15,6 +15,7 @@
  *   - couleur de la ligne (onglet Livraison uniquement) : vert = plus de 7 jours, orange = de 4 à 7 jours,
  *     rouge = moins de 4 jours, gris = commande réalisée
  *   - chaque matin vers 8 h, un e-mail avec toutes les commandes en cours
+ *     (envoyé même s'il n'y en a aucune : s'il n'arrive pas, c'est que le script a un problème)
  *
  * À FAIRE UNE FOIS (et après chaque mise à jour de ce code) : choisir "installer" en haut puis "Exécuter".
  */
@@ -485,7 +486,19 @@ function alerteDelais() {
     });
   });
 
-  if (!lignes.length) return;   // rien en cours : pas d'e-mail
+  if (!lignes.length) {
+    // Rien en cours : on envoie quand même un petit message, preuve que le script fonctionne
+    MailApp.sendEmail({
+      to: ALERT_EMAIL,
+      subject: '✅ CELARNO28 – aucune commande en cours, tout fonctionne',
+      htmlBody: '<p>Bonjour Arno,</p>' +
+        '<p>Aucune commande en cours ce matin. Le script de commande fonctionne normalement ✅</p>' +
+        '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' +
+        '<p style="color:#888">Si un matin tu ne reçois aucun e-mail CELARNO28, le script a un problème : ' +
+        'ouvre le lien /exec du formulaire sur ton PC pour vérifier (autorisation à renouveler, etc.).</p>'
+    });
+    return;
+  }
   lignes.sort(function (a, b) { return a.tri - b.tri; });
   var urgentes = lignes.filter(function (l) { return l.rouge; }).length;
   var html = '<p>Bonjour Arno,</p>' +
@@ -497,7 +510,8 @@ function alerteDelais() {
     lignes.map(function (l) { return l.html; }).join('') + '</table>' +
     '<p>Livraisons : 🟥 moins de ' + SEUIL_ROUGE + ' j · 🟧 ' + SEUIL_ROUGE + ' à ' + SEUIL_VERT + ' j · 🟩 plus de ' + SEUIL_VERT + ' j</p>' +
     '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' +
-    '<p style="color:#888">Une commande sort de cette liste dès que la case « Réalisé » est remplie.</p>';
+    '<p style="color:#888">Une commande sort de cette liste dès que la case « Réalisé » est remplie.<br>' +
+    'Ce récap arrive chaque matin, même sans commande : s\'il manque un jour, vérifie le script.</p>';
   MailApp.sendEmail({
     to: ALERT_EMAIL,
     subject: (urgentes ? '🟥 ' : '') + 'CELARNO28 – ' + lignes.length + ' commande(s) en cours' +
