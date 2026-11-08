@@ -415,6 +415,7 @@
           if (res && res.success) {
             var txt = form.getAttribute('data-merci').replace('{prenom}', donnees.prenom);
             if (res.devis) txt += '<br>Pour la partie sur devis, je te recontacte avec un prix.';
+            if (res.mailOk) txt += '<br>📧 Un récapitulatif vient de t\'être envoyé par e-mail (pense à regarder dans les indésirables).';
             if (res.photoKo) txt += '<br><b>Attention :</b> une photo n\'a pas pu être enregistrée, je te recontacte pour la récupérer.';
             document.getElementById('merciTexte').innerHTML = txt;
             form.style.display = 'none';

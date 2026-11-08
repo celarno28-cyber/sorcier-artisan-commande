@@ -385,7 +385,8 @@
         .then(function (res) {
           btn.disabled = false;
           if (res && res.success) {
-            document.getElementById('merciTexte').innerHTML = form.getAttribute('data-merci').replace('{prenom}', donnees.prenom);
+            document.getElementById('merciTexte').innerHTML = form.getAttribute('data-merci').replace('{prenom}', donnees.prenom) +
+              (res.mailOk ? '<br>📧 Un récapitulatif vient de t\'être envoyé par e-mail (pense à regarder dans les indésirables).' : '');
             form.style.display = 'none';
             document.getElementById('merci').style.display = 'block';
             window.scrollTo(0, 0);

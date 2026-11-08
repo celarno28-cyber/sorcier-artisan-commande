@@ -1,11 +1,12 @@
 /**
- * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v5.2)
+ * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v6)
  * ==============================================================
  * Les formulaires (festival.html, livraison.html et grimoire.html) sont hébergés sur GitHub Pages.
  * Les commandes du « grimoire du moment » (boules de Noël) arrivent dans l'onglet Livraison.
  * Ce script reçoit chaque commande (doPost) :
  *   1) envoie les photos dans l'album Google Photos "CELARNO28 - Photos reçues"
  *   2) ajoute une ligne dans l'onglet "Festival" ou "Livraison" de la Google Sheet
+ *   3) envoie au client un e-mail de confirmation (commandes livraison et boules, qui ont une adresse e-mail)
  *
  * Pour chaque modèle commandé, le client peut joindre une photo et/ou un texte à graver (facultatif).
  *
@@ -35,6 +36,12 @@ var BOULE_MAX_CARACTERES = 12;
 
 // Lien du formulaire, utilisé pour le rappel « commande test » du lundi dans l'e-mail du matin
 var LIEN_FORMULAIRE = "https://www.celarno28.fr/commande";
+
+// E-mail de confirmation envoyé au client
+var CONFIRMATION_CLIENT = true;              // false pour ne plus envoyer de confirmation
+var NOM_EXPEDITEUR = "Le Sorcier Artisan – CELARNO28";
+var TELEPHONE_CONTACT = "06 26 74 42 85";
+var LIEN_CONFIDENTIALITE = "https://www.celarno28.fr/confidentialite";
 
 // Produits et prix (le prix null = "sur devis")
 var CATALOGUE = {
@@ -84,7 +91,7 @@ var ONGLETS = {
 // ================== WEB APP ==================
 
 function doGet(e) {
-  return jsonOut_({ ok: true, service: 'CELARNO28 commandes', version: 5 });
+  return jsonOut_({ ok: true, service: 'CELARNO28 commandes', version: 6 });
 }
 
 function doPost(e) {
@@ -132,8 +139,16 @@ function enregistrerCommande_(data) {
     return { success: false, error: 'Commande non enregistrée : ' + err.message };
   }
 
+  // E-mail de confirmation au client (un échec ici n'annule pas la commande)
+  var mailOk = false;
+  try {
+    mailOk = envoyerConfirmation_(c, statut !== 'OK');
+  } catch (err) {
+    console.error('Confirmation client non envoyée : ' + err.message);
+  }
+
   // La commande est enregistrée même si une photo a échoué : on prévient le client sans lui faire renvoyer
-  return { success: true, total: c.total, devis: c.devis, photoKo: statut !== 'OK' };
+  return { success: true, total: c.total, devis: c.devis, photoKo: statut !== 'OK', mailOk: mailOk };
 }
 
 /** Compatibilité avec les anciens formulaires (une seule photo + un format). */
@@ -157,6 +172,7 @@ function lireCommande_(d) {
   var type = d.type === 'livraison' ? 'livraison' : 'festival';
   var c = {
     type: type,
+    grimoire: !!d.grimoire,
     prenom: texte_(d.prenom, 80),
     nom: texte_(d.nom, 80),
     telephone: texte_(d.telephone, 30),
@@ -255,6 +271,73 @@ function lireCommande_(d) {
     throw new Error('Une photo ne nous est pas parvenue, réessaie.');
   }
   return c;
+}
+
+// ================== CONFIRMATION CLIENT ==================
+
+/** Envoie au client le récapitulatif de sa commande. Renvoie true si l'e-mail est parti. */
+function envoyerConfirmation_(c, photoKo) {
+  if (!CONFIRMATION_CLIENT) return false;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email || '')) return false;   // pas d'e-mail (ex. festival)
+  if (MailApp.getRemainingDailyQuota() < 5) return false;               // on garde de quoi envoyer le récap du matin
+
+  var tz = Session.getScriptTimeZone();
+  var bleu = '#8a6a2f';
+  var lignes = c.lignes.map(function (l) {
+    l = l.replace(/ → à préciser$/, '');            // rien à afficher au client pour un modèle sans photo ni texte
+    return '<li style="margin:4px 0">' + echapper_(l).replace(/ → /, '<br><span style="color:#555">→ ') +
+           (l.indexOf(' → ') >= 0 ? '</span>' : '') + '</li>';
+  }).join('');
+  var total = c.total ? c.total + ' €' : '';
+  if (c.devis) total += (total ? ' + ' : '') + 'partie sur devis (je te recontacte avec un prix)';
+  var objet = c.grimoire ? 'Ta commande de boules de Noël 🎄 – Le Sorcier Artisan'
+                         : 'Ta commande est bien reçue – Le Sorcier Artisan';
+
+  var html =
+    '<div style="font-family:Georgia,serif;font-size:15px;color:#2a1f14;max-width:560px">' +
+    '<p>Bonjour ' + echapper_(c.prenom) + ',</p>' +
+    '<p>Merci pour ta commande ! Je l\'ai bien reçue et je te recontacte rapidement pour la valider avec toi.</p>' +
+    '<h3 style="color:' + bleu + ';margin:18px 0 6px">Ta commande</h3>' +
+    '<ul style="padding-left:18px;margin:0">' + lignes + '</ul>' +
+    (total ? '<p style="font-size:17px"><b>Total : ' + echapper_(total) + '</b>' +
+             (c.type === 'livraison' ? ' <span style="color:#555">(frais d\'envoi compris)</span>' : '') + '</p>' : '') +
+    (c.photos.length ? '<p>📷 ' + c.photos.length + ' photo' + (c.photos.length > 1 ? 's reçues' : ' reçue') + '.</p>' : '') +
+    (photoKo ? '<p style="color:#a50e0e"><b>Attention :</b> une photo n\'a pas pu être enregistrée, je te recontacte pour la récupérer.</p>' : '') +
+    (c.type === 'livraison'
+      ? '<h3 style="color:' + bleu + ';margin:18px 0 6px">Livraison</h3><p style="margin:0">' +
+        echapper_(c.prenom + ' ' + c.nom) + '<br>' + echapper_(c.adresse) + '<br>' + echapper_(c.cp + ' ' + c.ville) + '</p>' +
+        (c.delai ? '<p>Date souhaitée : <b>' + Utilities.formatDate(c.delai, tz, 'dd/MM/yyyy') + '</b></p>' : '')
+      : '') +
+    (c.precisions ? '<p>Tes précisions : <i>' + echapper_(c.precisions) + '</i></p>' : '') +
+    '<p>Une erreur dans ta commande (prénom, modèle, adresse) ? Réponds simplement à cet e-mail ou appelle-moi au ' +
+    TELEPHONE_CONTACT + '.</p>' +
+    '<p>À très vite,<br><b>Arno – Le Sorcier Artisan</b><br><span style="color:#555">CELARNO28 · Gravure sur bois · Orgères-en-Beauce</span></p>' +
+    '<p style="color:#999;font-size:12px">Tes informations servent uniquement à réaliser ta commande. ' +
+    '<a href="' + LIEN_CONFIDENTIALITE + '" style="color:#999">Confidentialité</a></p>' +
+    '</div>';
+
+  MailApp.sendEmail({
+    to: c.email,
+    replyTo: ALERT_EMAIL,
+    name: NOM_EXPEDITEUR,
+    subject: objet,
+    htmlBody: html
+  });
+  return true;
+}
+
+/** Pour voir la confirmation : choisir "testerConfirmation" puis Exécuter (l'e-mail arrive sur ALERT_EMAIL). */
+function testerConfirmation() {
+  var c = lireCommande_({
+    type: 'livraison', grimoire: true, prenom: 'Arno', nom: 'Test', telephone: '0600000000', email: ALERT_EMAIL,
+    adresse: '1 rue du Test', cp: '28140', ville: 'Orgères-en-Beauce',
+    delai: Utilities.formatDate(new Date(Date.now() + 10 * 86400000), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+    items: [{ id: 'bouleFlocons', qty: 2, units: [{ texte: 'Léa' }, { texte: 'Noé' }] },
+            { id: 'bouleHoux', qty: 1, units: [{ texte: 'Mamie' }] }],
+    photos: []
+  });
+  envoyerConfirmation_(c, false);
+  Logger.log('Confirmation de test envoyée à ' + ALERT_EMAIL);
 }
 
 // ================== GOOGLE SHEET ==================
