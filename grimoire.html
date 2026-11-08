@@ -156,7 +156,7 @@
     <a class="back" href="photo.html">‹ Retour</a>
     <h1>Le grimoire du moment</h1>
     <p class="subtitle">Boules de Noël en bois gravées à ton prénom</p>
-    <p class="offre"><b>6 €</b> la boule · <b>10 € les 2</b> · <b>envoi compris</b><br><small>Choisis tes modèles, écris un prénom par boule (12 caractères max).</small></p>
+    <p class="offre"><b>6 €</b> la boule · <b>10 € les 2</b> · <b>envoi compris</b><br><span id="limite" style="color:var(--brass)">🎄 Commandes jusqu'au 19 décembre</span><br><small>Choisis tes modèles, écris un prénom par boule (12 caractères max).</small></p>
 
     <form id="commande" data-type="livraison"
           data-merci="Merci {prenom} ! Ta commande de boules de Noël est bien enregistrée. Je te recontacte rapidement pour la valider avec toi.">
@@ -213,6 +213,7 @@
     var PRIX_DEUX = 10;        // prix de 2 boules
     var MAX_CARACTERES = 12;   // longueur max du prénom
     var MAX_BOULES = 30;       // boules max par commande
+    var DATE_LIMITE = '2026-12-19';   // dernier jour de commande (inclus) — changer pour l'an prochain
     // x, y = centre du bandeau où s'affiche le prénom (en % de l'image) ; l = largeur utile du bandeau (%)
     var MODELES = [
       { id: 'bouleCerfSapin', nom: 'Cerf & sapin',  img: 'boule-cerf-sapin.jpg', vierge: 'boule-cerf-sapin-vierge.jpg', x: 48.3, y: 57.7, l: 62 },
@@ -223,6 +224,22 @@
     // =====================================
 
     var form = document.getElementById('commande');
+
+    // ----- Date limite : après le DATE_LIMITE, la page affiche que les commandes sont closes -----
+    (function () {
+      var p = DATE_LIMITE.split('-');
+      var fin = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]), 23, 59, 59);
+      var mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+      document.getElementById('limite').textContent = '🎄 Commandes jusqu\'au ' + Number(p[2]) + ' ' + mois[Number(p[1]) - 1];
+      if (new Date() > fin) {
+        form.style.display = 'none';
+        var clos = document.createElement('div'); clos.className = 'merci'; clos.style.display = 'block';
+        clos.innerHTML = '<h2>Commandes terminées 🎄</h2><p>Les commandes de boules de Noël sont closes pour cette année. ' +
+          'Merci à toutes et à tous !<br>Tu peux toujours commander mes autres créations.</p><p><a href="photo.html">Voir les autres commandes</a></p>';
+        form.parentNode.insertBefore(clos, form);
+        document.querySelector('.offre').style.display = 'none';
+      }
+    })();
     var TYPE = form.getAttribute('data-type');
     var msg = document.getElementById('msg');
     var btn = document.getElementById('envoyer');
