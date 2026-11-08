@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Confidentialité — CELARNO28</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brass: #c9974b; --brass-dark: #8a6a2f; --copper: #b56a3c;
+      --ink: #1b140d; --parchment: #ecdfc4; --soft: #d8c9a3; --field: #12100b;
+      --ok: #9fd88c; --err: #e0836f;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+      padding: 24px 16px 40px;
+      background: radial-gradient(circle at 50% 0%, #3a2a18 0%, #1b140d 60%), var(--ink);
+      background-attachment: fixed;
+      font-family: 'Cormorant Garamond', Georgia, serif; font-size: 18px; color: var(--parchment);
+    }
+    .card {
+      width: 100%; max-width: 460px; position: relative;
+      background: linear-gradient(180deg, #2a1f14, #1b140d);
+      border: 3px solid var(--brass); border-radius: 10px;
+      box-shadow: 0 0 0 6px #0d0904, 0 10px 40px rgba(0,0,0,.6), inset 0 0 30px rgba(201,151,75,.08);
+      padding: 28px 20px 26px;
+    }
+    .card::before, .card::after { content: "⚙"; position: absolute; top: 8px; color: var(--brass-dark); font-size: 20px; }
+    .card::before { left: 10px; } .card::after { right: 10px; }
+    h1 { font-family: 'Cinzel Decorative', serif; font-size: 24px; text-align: center; color: var(--brass);
+         margin: 6px 0 4px; text-shadow: 0 1px 0 #000; }
+    .subtitle { text-align: center; font-size: 19px; color: var(--soft); margin: 0 0 6px; line-height: 1.35; }
+    .bois { text-align: center; font-style: italic; font-size: 16px; color: #b7a67f; margin: 0 0 18px; }
+    .back { display: inline-block; color: var(--soft); text-decoration: none; font-size: 16px; margin-bottom: 6px; }
+    .back:hover { color: var(--brass); }
+    h2 { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--brass); letter-spacing: .3px;
+         margin: 26px 0 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(201,151,75,.35); }
+    label.lbl { display: block; font-size: 17px; color: var(--brass); margin: 14px 0 6px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row2 > div { min-width: 0; }
+    .cp-ville { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
+    input[type=text], input[type=tel], input[type=email], input[type=date], textarea {
+      width: 100%; padding: 12px 13px; font-size: 17px; font-family: inherit;
+      background: var(--field); border: 1px solid var(--brass-dark); border-radius: 6px; color: var(--parchment);
+    }
+    input[type=date] { color-scheme: dark; min-height: 48px; }
+    textarea { min-height: 80px; resize: vertical; }
+    input:focus, textarea:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .hint { font-size: 15px; color: #b7a67f; font-style: italic; margin: 6px 0 0; }
+
+    .produit { margin-top: 8px; padding: 11px 12px; background: var(--field); border: 1px solid var(--brass-dark);
+               border-radius: 6px; transition: border-color .15s, box-shadow .15s; }
+    .produit.actif { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); }
+    .p-ligne { display: flex; align-items: center; gap: 10px; }
+    .p-nom { flex: 1; min-width: 0; line-height: 1.2; }
+    .p-prix { color: var(--brass); font-weight: 700; white-space: nowrap; }
+    .p-prix.devis { font-weight: 600; font-style: italic; font-size: 16px; }
+    .stepper { display: flex; align-items: center; border: 1px solid var(--brass-dark); border-radius: 6px; overflow: hidden; }
+    .stepper button { width: 38px; height: 38px; border: 0; background: #2a1f14; color: var(--brass);
+                      font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; }
+    .stepper button:active { background: #3a2a18; }
+    .stepper .qte { width: 30px; text-align: center; font-weight: 700; }
+    .p-detail { display: none; margin-top: 10px; }
+    .produit.actif .p-detail { display: block; }
+
+    .total { text-align: center; margin-top: 18px; font-size: 20px; color: var(--brass);
+             font-family: 'Cinzel Decorative', serif; min-height: 26px; }
+    .total small { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--soft); font-style: italic; }
+
+    .file-wrap { margin-top: 8px; border: 2px dashed var(--brass-dark); border-radius: 8px; padding: 14px; text-align: center; }
+    .file-wrap input[type=file] { display: none; }
+    .file-btn { display: inline-block; padding: 10px 18px; background: linear-gradient(180deg, var(--brass), var(--brass-dark));
+                color: var(--ink); font-weight: 700; border-radius: 6px; cursor: pointer; font-size: 17px; }
+    .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .thumbs:empty { display: none; }
+    .thumb { position: relative; aspect-ratio: 1; border: 2px solid var(--brass-dark); border-radius: 6px; overflow: hidden; background: #000; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb button { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 50%; border: 0;
+                    background: rgba(0,0,0,.75); color: #fff; font-size: 17px; line-height: 26px; cursor: pointer; padding: 0; }
+    .thumb.wait::after { content: ""; position: absolute; inset: 0; margin: auto; width: 22px; height: 22px;
+                         border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf; border-radius: 50%; animation: spin .8s linear infinite; }
+
+    .consent { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; font-size: 15px; color: #c9bd9f; line-height: 1.4; }
+    .consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brass); flex-shrink: 0; }
+    button.submit {
+      width: 100%; margin-top: 20px; padding: 15px; font-family: 'Cinzel Decorative', serif; font-size: 17px;
+      background: linear-gradient(180deg, var(--copper), #7a3f22); color: #f4e9cf; border: 1px solid #5a2f18;
+      border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 #4a2415, 0 6px 12px rgba(0,0,0,.4);
+    }
+    button.submit:active { transform: translateY(2px); box-shadow: 0 2px 0 #4a2415; }
+    button.submit:disabled { opacity: .6; cursor: default; }
+    .msg { margin-top: 16px; text-align: center; font-size: 17px; min-height: 22px; line-height: 1.4; }
+    .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf;
+               border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .merci { display: none; text-align: center; padding: 10px 4px; }
+    .merci h2 { border: 0; font-size: 20px; margin-top: 10px; }
+    .merci p { color: var(--soft); line-height: 1.45; }
+    .merci a { color: var(--brass); }
+    @media (max-width: 360px) { .row2 { grid-template-columns: 1fr; } }
+
+  .choix { display: block; text-decoration: none; color: var(--parchment); margin-top: 16px; padding: 18px 16px;
+           background: var(--field); border: 1px solid var(--brass-dark); border-radius: 8px;
+           display: flex; gap: 14px; align-items: center; transition: border-color .15s, transform .1s; }
+  .choix:hover, .choix:focus { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); outline: none; }
+  .choix:active { transform: translateY(1px); }
+  .choix svg { flex-shrink: 0; width: 46px; height: 46px; color: var(--brass); }
+  .choix strong { display: block; font-family: 'Cinzel Decorative', serif; color: var(--brass); font-size: 17px; margin-bottom: 3px; }
+  .choix span { color: var(--soft); font-size: 17px; line-height: 1.3; }
+  .choix .fleche { margin-left: auto; color: var(--brass); font-size: 26px; }
+  
+    .card { max-width: 620px; }
+    .legal p, .legal li { color: var(--parchment); line-height: 1.5; font-size: 17px; }
+    .legal ul { padding-left: 20px; margin: 6px 0; }
+    .legal a { color: var(--brass); }
+    .legal .maj { text-align: center; font-style: italic; color: #b7a67f; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <div class="card legal">
+    <h1>Confidentialité</h1>
+    <p class="subtitle">Comment CELARNO28 utilise tes informations</p>
+    <p class="maj">Mise à jour : 8 novembre 2026</p>
+
+    <h2>Qui je suis</h2>
+    <p>CELARNO28 – Le Sorcier Artisan, entreprise individuelle de gravure et découpe laser sur bois, basée à Orgères-en-Beauce (28).
+    Contact : <a href="mailto:celarno28@gmail.com">celarno28@gmail.com</a> · <a href="tel:0626744285">06 26 74 42 85</a>.</p>
+
+    <h2>Les informations que je reçois</h2>
+    <p>Quand tu passes commande avec mes formulaires (festival, livraison, boules de Noël) :</p>
+    <ul>
+      <li>tes coordonnées : prénom, nom, téléphone, e-mail et adresse de livraison ;</li>
+      <li>le contenu de ta commande : modèles choisis, textes ou prénoms à graver, date souhaitée, précisions ;</li>
+      <li>les photos que tu m'envoies pour la gravure.</li>
+    </ul>
+
+    <h2>Pourquoi</h2>
+    <p>Uniquement pour réaliser ta commande : te recontacter pour la valider, graver tes créations et te les remettre ou te les envoyer.
+    Je ne vends pas et ne partage pas tes informations, et je ne t'envoie pas de publicité sans ton accord.
+    Je ne publie jamais tes photos ni tes créations personnalisées sans ta permission.</p>
+
+    <h2>Où elles sont rangées</h2>
+    <p>Tes coordonnées et ta commande sont enregistrées dans un tableau Google Sheets, et tes photos dans un album Google Photos,
+    sur mon compte Google personnel à l'entreprise, accessible à moi seul. Google peut héberger ces données hors de l'Union européenne,
+    avec les garanties prévues par le RGPD. Les pages de commande utilisent aussi les polices de caractères de Google Fonts.</p>
+
+    <h2>Combien de temps</h2>
+    <ul>
+      <li>Photos : supprimées au plus tard 3 mois après la remise ou l'envoi de ta commande.</li>
+      <li>Coordonnées et détail de la commande : conservés 3 ans après ta dernière commande (suivi, service après-vente), puis supprimés,
+      sauf les éléments que la loi m'oblige à garder plus longtemps (factures : 10 ans).</li>
+    </ul>
+
+    <h2>Tes droits</h2>
+    <p>Tu peux à tout moment me demander de voir, corriger ou supprimer tes informations, ou t'opposer à leur utilisation :
+    écris-moi à <a href="mailto:celarno28@gmail.com">celarno28@gmail.com</a>, je te réponds sous un mois.
+    Si tu estimes que tes droits ne sont pas respectés, tu peux contacter la CNIL (<a href="https://www.cnil.fr">www.cnil.fr</a>).</p>
+
+    <p style="text-align:center;margin-top:24px"><a href="photo.html">‹ Retour aux commandes</a></p>
+  </div>
+</body>
+</html>
