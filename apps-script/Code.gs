@@ -1,5 +1,5 @@
 /**
- * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v5.1)
+ * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v5.2)
  * ==============================================================
  * Les formulaires (festival.html, livraison.html et grimoire.html) sont hébergés sur GitHub Pages.
  * Les commandes du « grimoire du moment » (boules de Noël) arrivent dans l'onglet Livraison.
@@ -32,6 +32,9 @@ var MAX_MODELES = 30;                       // modèles (et donc photos) maximum
 var BOULE_PRIX_UNE = 6;
 var BOULE_PRIX_DEUX = 10;
 var BOULE_MAX_CARACTERES = 12;
+
+// Lien du formulaire, utilisé pour le rappel « commande test » du lundi dans l'e-mail du matin
+var LIEN_FORMULAIRE = "https://www.celarno28.fr/commande";
 
 // Produits et prix (le prix null = "sur devis")
 var CATALOGUE = {
@@ -447,6 +450,21 @@ function lettre_(n) {
 
 // ================== RÉCAPITULATIF PAR E-MAIL ==================
 
+/** Rappel de la routine, ajouté en bas de chaque e-mail du matin (+ commande test le lundi). */
+function blocRoutine_(tz) {
+  var lundi = Utilities.formatDate(new Date(), tz, 'u') === '1';   // 1 = lundi
+  var html = '<div style="margin-top:16px;padding:10px 12px;border:1px solid #c9974b;border-radius:6px;background:#fbf6ea">' +
+    '<b>Ta routine du jour</b><br>' +
+    '☐ Recontacter les nouveaux clients, puis cocher <b>Répondu</b><br>' +
+    '☐ À chaque envoi ou remise, remplir la date dans <b>Réalisé</b>';
+  if (lundi) {
+    html += '<br><br>🧪 <b>C\'est lundi : fais ta commande test</b> (30 secondes) depuis ton téléphone sur ' +
+      '<a href="' + LIEN_FORMULAIRE + '">' + LIEN_FORMULAIRE.replace('https://', '') + '</a>, ' +
+      'vérifie qu\'elle arrive dans la Sheet, puis supprime la ligne.';
+  }
+  return html + '</div>';
+}
+
 /** Lancée chaque matin : envoie toutes les commandes en cours (non réalisées), les plus urgentes en premier. */
 function alerteDelais() {
   majJours();
@@ -493,7 +511,7 @@ function alerteDelais() {
       subject: '✅ CELARNO28 – aucune commande en cours, tout fonctionne',
       htmlBody: '<p>Bonjour Arno,</p>' +
         '<p>Aucune commande en cours ce matin. Le script de commande fonctionne normalement ✅</p>' +
-        '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' +
+        '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' + blocRoutine_(tz) +
         '<p style="color:#888">Si un matin tu ne reçois aucun e-mail CELARNO28, le script a un problème : ' +
         'ouvre le lien /exec du formulaire sur ton PC pour vérifier (autorisation à renouveler, etc.).</p>'
     });
@@ -509,7 +527,7 @@ function alerteDelais() {
     '<th>Commande</th><th>Délai client</th><th>Répondu</th></tr>' +
     lignes.map(function (l) { return l.html; }).join('') + '</table>' +
     '<p>Livraisons : 🟥 moins de ' + SEUIL_ROUGE + ' j · 🟧 ' + SEUIL_ROUGE + ' à ' + SEUIL_VERT + ' j · 🟩 plus de ' + SEUIL_VERT + ' j</p>' +
-    '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' +
+    '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' + blocRoutine_(tz) +
     '<p style="color:#888">Une commande sort de cette liste dès que la case « Réalisé » est remplie.<br>' +
     'Ce récap arrive chaque matin, même sans commande : s\'il manque un jour, vérifie le script.</p>';
   MailApp.sendEmail({
