@@ -142,7 +142,7 @@
                        text-shadow: 0 1px 0 rgba(255,240,210,.55), 0 -1px 0 rgba(60,25,8,.35); pointer-events: none; }
     .apercu .gravure.vide { color: rgba(122,61,26,.45); }
     .boule label { display: block; font-size: 15px; color: var(--soft); margin: 6px 0 4px; }
-    .boule input[type=text] { padding: 9px 10px; font-size: 16px; }
+    .boule input[type=text] { padding: 11px 10px; font-size: 16px; position: relative; z-index: 1; }
     .compteur { float: right; font-size: 13px; color: #8f8063; }
     .zoom { display: none; position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.85); align-items: center; justify-content: center; padding: 16px; }
     .zoom.ouvert { display: flex; }
@@ -263,7 +263,7 @@
       m.el.classList.toggle('actif', m.noms.length > 0);
       dessiner(m);
       majTotal(); afficher('', '');
-      if (focusDernier) { var ins = m.boulesEl.querySelectorAll('input'); if (ins.length) ins[ins.length - 1].focus(); }
+      if (focusDernier) { var ins = m.boulesEl.querySelectorAll('input'); if (ins.length) ins[ins.length - 1].focus({ preventScroll: true }); }
     }
 
     function ajusterTexte(span, m, box) {
@@ -282,6 +282,7 @@
         var ap = document.createElement('div'); ap.className = 'apercu';
         var im = document.createElement('img'); im.src = m.vierge; im.alt = 'Aperçu ' + m.nom;
         var g = document.createElement('span'); g.className = 'gravure';
+        g._m = m; g._box = ap;
         ap.appendChild(im); ap.appendChild(g);
         var lab = document.createElement('label');
         var cpt = document.createElement('span'); cpt.className = 'compteur';
@@ -304,8 +305,19 @@
         rendu();
       });
     }
-    window.addEventListener('resize', function () { MODELES.forEach(function (m) { dessiner(m); }); });
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { MODELES.forEach(function (m) { if (m.noms.length) dessiner(m); }); });
+    // Sur téléphone, l'ouverture du clavier redimensionne la page : on ajuste seulement la taille
+    // des prénoms affichés, sans reconstruire les cases (sinon le clavier se referme).
+    function reajuster() {
+      Array.prototype.forEach.call(document.querySelectorAll('.apercu .gravure'), function (g) {
+        if (g._m) ajusterTexte(g, g._m, g._box);
+      });
+    }
+    var largeurPrec = window.innerWidth;
+    window.addEventListener('resize', function () {
+      if (window.innerWidth === largeurPrec) return;   // seule la hauteur change (clavier) : rien à faire
+      largeurPrec = window.innerWidth; reajuster();
+    });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(reajuster);
 
     function majTotal() {
       var n = nbBoules();
