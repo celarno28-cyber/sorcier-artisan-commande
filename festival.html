@@ -110,6 +110,7 @@
     button.submit:disabled { opacity: .6; cursor: default; }
     .msg { margin-top: 16px; text-align: center; font-size: 17px; min-height: 22px; line-height: 1.4; }
     .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+    .msg a { color: var(--brass); font-weight: 700; }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(244,233,207,.4); border-top-color: #f4e9cf;
                border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -318,6 +319,15 @@
       delaiEl.min = t.toISOString().slice(0, 10);
     }
 
+    function messageEchec() {
+      var tel = (typeof CONTACT_TEL !== 'undefined' && CONTACT_TEL) ? CONTACT_TEL : '';
+      var mail = (typeof CONTACT_EMAIL !== 'undefined' && CONTACT_EMAIL) ? CONTACT_EMAIL : '';
+      var lignes = [];
+      if (tel) lignes.push('📞 <a href="tel:' + tel.replace(/[^0-9+]/g, '') + '">' + tel + '</a>');
+      if (mail) lignes.push('✉️ <a href="mailto:' + mail + '?subject=Ma%20commande%20Sorcier%20Artisan">' + mail + '</a>');
+      return 'Ta commande n\'a pas pu être envoyée. Réessaie dans un instant' +
+        (lignes.length ? ', ou contacte-moi directement :<br>' + lignes.join('<br>') : '.');
+    }
     function afficher(cls, html) { msg.className = 'msg ' + cls; msg.innerHTML = html; }
     function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
 
@@ -363,12 +373,12 @@
             document.getElementById('merci').style.display = 'block';
             window.scrollTo(0, 0);
           } else {
-            afficher('err', 'Oups : ' + (res && res.error ? res.error : 'erreur inconnue'));
+            afficher('err', (res && res.error ? 'Oups : ' + res.error + '<br>' : '') + messageEchec());
           }
         })
         .catch(function () {
           btn.disabled = false;
-          afficher('err', 'Erreur de connexion, vérifie ton réseau et réessaie.');
+          afficher('err', messageEchec());
         });
     });
 
