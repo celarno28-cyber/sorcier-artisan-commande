@@ -232,8 +232,8 @@
     if (!C.ouverte()) {
       form.style.display = 'none';
       var clos = document.createElement('div'); clos.className = 'merci'; clos.style.display = 'block';
-      clos.innerHTML = '<h2>Commandes terminées ' + C.emoji + '</h2><p>' + C.messageFin +
-        '<br>Une nouvelle collection arrive bientôt dans le grimoire !<br>En attendant, tu peux commander mes autres créations.</p>' +
+      clos.innerHTML = '<h2>Le grimoire se prépare… ✨</h2><p>' + C.messageFerme() +
+        '<br>En attendant, tu peux commander mes autres créations.</p>' +
         '<p><a href="photo.html">Voir les autres commandes</a></p>';
       form.parentNode.insertBefore(clos, form);
       document.getElementById('offre').style.display = 'none';

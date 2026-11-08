@@ -151,9 +151,7 @@
     (function () {
       var t = document.getElementById('grimoireTexte');
       if (typeof COLLECTION === 'undefined' || !t) return;
-      t.textContent = COLLECTION.ouverte()
-        ? COLLECTION.sousTitre + ' · jusqu\'au ' + COLLECTION.dateTexte()
-        : 'Nouvelle collection bientôt…';
+      t.textContent = COLLECTION.texteBouton();
     })();
   </script>
 </body>

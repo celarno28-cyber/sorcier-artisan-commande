@@ -1,5 +1,5 @@
 /**
- * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v6.1)
+ * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v6.2)
  * ==============================================================
  * Les formulaires (festival.html, livraison.html et grimoire.html) sont hébergés sur GitHub Pages.
  * Les commandes du « grimoire du moment » (boules de Noël) arrivent dans l'onglet Livraison.
@@ -36,6 +36,20 @@ var BOULE_MAX_CARACTERES = 12;
 
 // Lien du formulaire, utilisé pour le rappel « commande test » du lundi dans l'e-mail du matin
 var LIEN_FORMULAIRE = "https://www.celarno28.fr/commande";
+
+// Planning du « grimoire du moment » (mêmes dates que collection.js sur GitHub) :
+// l'e-mail du matin rappelle de préparer chaque collection 3 semaines avant, et annonce la dernière semaine.
+var PLANNING_GRIMOIRE = [
+  { nom: 'Boules de Noël',        debut: '2026-11-07', fin: '2026-12-19' },
+  { nom: 'Saint-Valentin',        debut: '2027-01-04', fin: '2027-02-07' },
+  { nom: 'Fête des grands-mères', debut: '2027-02-08', fin: '2027-02-28' },
+  { nom: 'Fête des mères',        debut: '2027-04-26', fin: '2027-05-23' },
+  { nom: 'Fête des pères',        debut: '2027-05-24', fin: '2027-06-13' },
+  { nom: 'Cadeaux de maîtresse',  debut: '2027-06-14', fin: '2027-06-27' },
+  { nom: 'Boules de Noël',        debut: '2027-11-02', fin: '2027-12-19' }
+];
+var PREPA_JOURS = 21;     // rappel de préparation à partir de 3 semaines avant le lancement
+var FIN_JOURS = 7;        // rappel « dernière semaine » avant la date limite
 
 // E-mail de confirmation envoyé au client
 var CONFIRMATION_CLIENT = true;              // false pour ne plus envoyer de confirmation
@@ -549,6 +563,7 @@ function blocRoutine_(tz) {
       '<a href="' + LIEN_FORMULAIRE + '">' + LIEN_FORMULAIRE.replace('https://', '') + '</a>, ' +
       'vérifie qu\'elle arrive dans la Sheet, puis supprime la ligne.';
   }
+  html += rappelsGrimoire_(tz);
   if (menage) {
     html += '<br><br>🧹 <b>Ménage du trimestre : pense à vider l\'album photos</b> « ' + ALBUM_TITLE + ' » ' +
       '(<a href="https://photos.google.com/albums">ouvrir Google Photos</a>). Supprime les photos des commandes ' +
@@ -556,6 +571,29 @@ function blocRoutine_(tz) {
       'Pour libérer vraiment la place, vide aussi la corbeille de Google Photos.';
   }
   return html + '</div>';
+}
+
+/** Rappels du planning des collections du grimoire, pour l'e-mail du matin. */
+function rappelsGrimoire_(tz) {
+  var auj = aujourdhui_();
+  function date(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function txt(d) { return Utilities.formatDate(d, tz, 'dd/MM/yyyy'); }
+  var out = '';
+  PLANNING_GRIMOIRE.forEach(function (c) {
+    var avant = Math.round((date(c.debut) - auj) / 86400000);
+    var reste = Math.round((date(c.fin) - auj) / 86400000);
+    if (avant > 0 && avant <= PREPA_JOURS) {
+      out += '<br><br>🗓️ <b>Grimoire : « ' + c.nom + ' » ouvre le ' + txt(date(c.debut)) + '</b> (dans ' + avant + ' j). ' +
+        'Prépare tes modèles, fais une photo de chacun avec un prénom gravé, et envoie-les à Claude avec les noms et les prix ' +
+        '(il met la page et le script à jour).';
+    } else if (avant === 0) {
+      out += '<br><br>🚀 <b>« ' + c.nom + ' » ouvre aujourd\'hui dans le grimoire.</b> Vérifie la page et annonce-la sur tes réseaux.';
+    } else if (avant < 0 && reste >= 0 && reste <= FIN_JOURS) {
+      out += '<br><br>⏳ <b>Dernière ligne droite pour « ' + c.nom + ' »</b> : commandes jusqu\'au ' + txt(date(c.fin)) +
+        (reste ? ' (encore ' + reste + ' j)' : ' (dernier jour !)') + '. Pense à le rappeler sur tes réseaux.';
+    }
+  });
+  return out;
 }
 
 /** Lancée chaque matin : envoie toutes les commandes en cours (non réalisées), les plus urgentes en premier. */
