@@ -1,5 +1,5 @@
 /**
- * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v7)
+ * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v8)
  * ==============================================================
  * Les formulaires (festival.html, livraison.html et grimoire.html) sont hébergés sur GitHub Pages.
  * Les commandes du « grimoire du moment » (boules de Noël) arrivent dans l'onglet Livraison.
@@ -11,6 +11,7 @@
  *      colonnes « Association » et « Reversé » dans l'onglet Livraison, suivi dans l'onglet « Associations »
  *
  * Pour chaque modèle commandé, le client peut joindre une photo et/ou un texte à graver (facultatif).
+ * Gravures photo (cadres) : jusqu'à 4 photos par gravure, à réunir sur une seule gravure.
  *
  * Suivi des délais :
  *   - colonne "Jours restants" = jours avant la date limite, en gardant 3 jours de marge pour l'envoi
@@ -29,7 +30,9 @@ var ALERT_EMAIL = "celarno28@gmail.com";   // adresse qui reçoit le récapitula
 var MARGE_ENVOI = 3;                        // jours réservés à l'envoi postal (commandes livraison)
 var SEUIL_VERT = 7;                         // plus de 7 jours restants = vert
 var SEUIL_ROUGE = 4;                        // moins de 4 jours restants = rouge (entre les deux = orange)
-var MAX_MODELES = 30;                       // modèles (et donc photos) maximum par commande
+var MAX_MODELES = 30;                       // modèles maximum par commande
+var MAX_PHOTOS_GRAVURE = 4;                 // photos maximum sur une même gravure photo (cadre), réunies en une seule
+var MAX_PHOTOS = 40;                        // photos maximum par commande
 
 // Boules de Noël (grimoire du moment) : prix à l'unité et prix par lot de 2, toutes boules confondues
 var BOULE_PRIX_UNE = 6;
@@ -77,10 +80,10 @@ var LIEN_CONFIDENTIALITE = "https://www.celarno28.fr/confidentialite";
 
 // Produits et prix (le prix null = "sur devis")
 var CATALOGUE = {
-  p10x10:      { label: "Gravure photo 10x10 cm", prix: 12 },
-  p10x15:      { label: "Gravure photo 10x15 cm", prix: 15 },
-  p13x18:      { label: "Gravure photo 13x18 cm", prix: 20 },
-  formatDivers:{ label: "Gravure photo format sur mesure", prix: null, detail: true },
+  p10x10:      { label: "Gravure photo 10x10 cm", prix: 12, multi: true },
+  p10x15:      { label: "Gravure photo 10x15 cm", prix: 15, multi: true },
+  p13x18:      { label: "Gravure photo 13x18 cm", prix: 20, multi: true },
+  formatDivers:{ label: "Gravure photo format sur mesure", prix: null, detail: true, multi: true },
   porteCle:    { label: "Porte-clé", prix: 6 },
   marquePage:  { label: "Marque-page", prix: 6 },
   divers:      { label: "Autre création", prix: null, detail: true },
@@ -125,7 +128,7 @@ var ONGLETS = {
 // ================== WEB APP ==================
 
 function doGet(e) {
-  return jsonOut_({ ok: true, service: 'CELARNO28 commandes', version: 7 });
+  return jsonOut_({ ok: true, service: 'CELARNO28 commandes', version: 8 });
 }
 
 function doPost(e) {
@@ -294,9 +297,10 @@ function lireCommande_(d) {
       for (var k = 0; k < qty; k++) {
         var u = it.units[k] || {};
         var t = texte_(u.texte, p.boule ? BOULE_MAX_CARACTERES : 200);
-        var aPhoto = !!u.photo;
-        if (aPhoto) photosAnnoncees++;
-        var quoi = (aPhoto ? 'photo' : '') + (aPhoto && t ? ' + ' : '') + (t ? (p.boule ? '« ' + t + ' »' : 'texte « ' + t + ' »') : '');
+        var nbPh = Math.floor(Number(u.photos)) || (u.photo ? 1 : 0);
+        nbPh = Math.max(0, Math.min(nbPh, p.multi ? MAX_PHOTOS_GRAVURE : 1));
+        photosAnnoncees += nbPh;
+        var quoi = (nbPh > 1 ? nbPh + ' photos à réunir' : nbPh ? 'photo' : '') + (nbPh && t ? ' + ' : '') + (t ? (p.boule ? '« ' + t + ' »' : 'texte « ' + t + ' »') : '');
         if (!quoi) quoi = 'à préciser';   // photo et texte sont facultatifs
         desc.push((qty > 1 ? 'n°' + (k + 1) + ' : ' : '') + quoi);
       }
@@ -322,8 +326,8 @@ function lireCommande_(d) {
   if (unites > MAX_MODELES) throw new Error(MAX_MODELES + ' modèles maximum par commande.');
   c.resume = c.lignes.join('\n');
 
-  // Photos, chacune avec son étiquette (ex. "13x18", "Porte-clé n°2")
-  var photos = Array.isArray(d.photos) ? d.photos.slice(0, MAX_MODELES) : [];
+  // Photos, chacune avec son étiquette (ex. "13x18", "Porte-clé n°2", "13x18 n°1 – photo 2/3")
+  var photos = Array.isArray(d.photos) ? d.photos.slice(0, MAX_PHOTOS) : [];
   photos.forEach(function (ph, i) {
     if (!ph || !ph.base64) return;
     c.photos.push({
@@ -490,9 +494,9 @@ function preparerOngletAssos_(ss) {
     var r = i >= 0 ? i + 2 : sh.getLastRow() + 1;
     if (i < 0) { existants.push(a.nom); sh.getRange(r, 6).setValue(0); }
     sh.getRange(r, 1, 1, 2).setValues([[a.nom, a.email]]);
-    sh.getRange(r, 3).setFormula('=COUNTIF(' + L + colAsso + ':' + colAsso + ',A' + r + ')');
-    sh.getRange(r, 4).setFormula('=SUMIF(' + L + colAsso + ':' + colAsso + ',A' + r + ',' + L + colTotal + ':' + colTotal + ')');
-    sh.getRange(r, 5).setFormula('=SUMIF(' + L + colAsso + ':' + colAsso + ',A' + r + ',' + L + colRev + ':' + colRev + ')');
+    sh.getRange(r, 3).setFormula('=COUNTIF(' + L + colAsso + ':' + colAsso + ';A' + r + ')');
+    sh.getRange(r, 4).setFormula('=SUMIF(' + L + colAsso + ':' + colAsso + ';A' + r + ';' + L + colTotal + ':' + colTotal + ')');
+    sh.getRange(r, 5).setFormula('=SUMIF(' + L + colAsso + ':' + colAsso + ';A' + r + ';' + L + colRev + ':' + colRev + ')');
     sh.getRange(r, 7).setFormula('=E' + r + '-F' + r);
     sh.getRange(r, 8).setValue(dateIso_(a.dateLimite)).setNumberFormat('dd/mm/yyyy');
     sh.getRange(r, 6).setBackground('#fff2cc').setNote('À remplir à la main : somme déjà versée à l\'association.');

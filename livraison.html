@@ -86,6 +86,11 @@
             overflow: hidden; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
             text-align: center; color: var(--brass); font-size: 14px; line-height: 1.15; padding: 4px; background: rgba(255,255,255,.02); }
     .slot input { display: none; }
+    .u-photos { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .unite.multi .u-corps { grid-template-columns: 1fr; }
+    .unite.multi .u-photos { grid-template-columns: repeat(4, minmax(0, 92px)); }
+    .unite.multi .u-texte textarea { min-height: 58px; }
+    .u-note { font-size: 14px; font-style: italic; color: #b7a67f; margin-top: -2px; }
     .slot .plus-photo { font-size: 26px; line-height: 1; margin-bottom: 2px; }
     .slot.rempli { border-style: solid; border-color: var(--brass); padding: 0; }
     .slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -150,29 +155,29 @@
       </div>
 
       <h2>Gravure photo sur bois</h2>
-      <p class="intro-photo">Choisis tes modèles avec le bouton +. Pour chacun, tu peux ajouter <b>une photo</b> ou écrire <b>le texte à graver</b> (facultatif).</p>
-      <div class="produit" data-id="p10x10" data-court="10x10" data-prix="12">
+      <p class="intro-photo">Choisis tes modèles avec le bouton +. Pour chacun, tu peux ajouter <b>une photo</b> ou écrire <b>le texte à graver</b> (facultatif).<br>Plusieurs photos à réunir sur une même gravure&nbsp;? Ajoutes-en <b>jusqu’à 4</b> par gravure.</p>
+      <div class="produit" data-id="p10x10" data-multi="4" data-court="10x10" data-prix="12">
         <div class="p-ligne">
           <span class="p-nom">10 x 10 cm</span><span class="p-prix">12 €</span>
           <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
         </div>
         <div class="slots"></div>
       </div>
-      <div class="produit" data-id="p10x15" data-court="10x15" data-prix="15">
+      <div class="produit" data-id="p10x15" data-multi="4" data-court="10x15" data-prix="15">
         <div class="p-ligne">
           <span class="p-nom">10 x 15 cm</span><span class="p-prix">15 €</span>
           <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
         </div>
         <div class="slots"></div>
       </div>
-      <div class="produit" data-id="p13x18" data-court="13x18" data-prix="20">
+      <div class="produit" data-id="p13x18" data-multi="4" data-court="13x18" data-prix="20">
         <div class="p-ligne">
           <span class="p-nom">13 x 18 cm</span><span class="p-prix">20 €</span>
           <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
         </div>
         <div class="slots"></div>
       </div>
-      <div class="produit" data-id="formatDivers" data-court="Autre format" data-prix="">
+      <div class="produit" data-id="formatDivers" data-multi="4" data-court="Autre format" data-prix="">
         <div class="p-ligne">
           <span class="p-nom">Autre format</span><span class="p-prix devis">sur devis</span>
           <div class="stepper"><button type="button" class="moins" aria-label="Retirer">−</button><span class="qte">0</span><button type="button" class="plus" aria-label="Ajouter">+</button></div>
@@ -239,15 +244,20 @@
     var produits = Array.prototype.slice.call(document.querySelectorAll('.produit')).map(function (el) {
       return { el: el, id: el.getAttribute('data-id'), court: el.getAttribute('data-court'),
                prix: el.getAttribute('data-prix'), qteEl: el.querySelector('.qte'),
-               slotsEl: el.querySelector('.slots'), detail: el.querySelector('.detail'), photos: [] };
+               slotsEl: el.querySelector('.slots'), detail: el.querySelector('.detail'),
+               multi: Number(el.getAttribute('data-multi')) || 1, photos: [] };
     });
     function totalModeles() { return produits.reduce(function (n, p) { return n + p.photos.length; }, 0); }
+    var MAX_PHOTOS = 40;   // photos maximum par commande (toutes gravures confondues)
+    function totalPhotos() {
+      return produits.reduce(function (n, p) { return n + p.photos.reduce(function (m, ph) { return m + ph.imgs.length + ph.wait; }, 0); }, 0);
+    }
     function etiquette(p, i) { return p.court + (p.photos.length > 1 ? ' n°' + (i + 1) : ''); }
 
     produits.forEach(function (p) {
       function changer(delta) {
         if (delta > 0 && totalModeles() >= MAX_MODELES) { afficher('err', MAX_MODELES + ' modèles maximum par commande.'); return; }
-        if (delta > 0) p.photos.push({ dataUrl: null, wait: false, texte: '' });
+        if (delta > 0) p.photos.push({ imgs: [], wait: 0, texte: '' });
         else if (p.photos.length) p.photos.pop();
         var q = p.photos.length;
         p.qteEl.textContent = q;
@@ -264,41 +274,61 @@
       p.slotsEl.innerHTML = '';
       p.photos.forEach(function (ph, i) {
         var u = document.createElement('div');
-        u.className = 'unite' + (ph.err ? ' vide-err' : '');
+        u.className = 'unite' + (p.multi > 1 ? ' multi' : '') + (ph.err ? ' vide-err' : '');
         var titre = document.createElement('div'); titre.className = 'u-titre';
-        titre.innerHTML = (p.photos.length > 1 ? '<b>' + p.court + ' n°' + (i + 1) + '</b> : ' : '') + 'photo ou texte à graver <i>(facultatif)</i>';
+        titre.innerHTML = (p.photos.length > 1 ? '<b>' + p.court + ' n°' + (i + 1) + '</b> : ' : '') +
+          (p.multi > 1 ? 'photo(s) ou texte à graver <i>(facultatif)</i>' : 'photo ou texte à graver <i>(facultatif)</i>');
         u.appendChild(titre);
         var corps = document.createElement('div'); corps.className = 'u-corps';
 
-        // Case photo
-        var slot = document.createElement('label');
-        slot.className = 'slot' + (ph.dataUrl ? ' rempli' : '') + (ph.wait ? ' wait' : '');
-        var input = document.createElement('input');
-        input.type = 'file'; input.accept = 'image/*';
-        input.addEventListener('change', function () {
-          var f = input.files[0]; if (!f) return;
-          ph.wait = true; ph.err = false; dessiner(p);
-          compresser(f, function (url) { ph.dataUrl = url; ph.wait = false; dessiner(p); verifierProduit(p); },
-                        function () { ph.wait = false; dessiner(p); afficher('err', "Impossible de lire « " + f.name + " ». Essaie une autre photo."); });
-        });
-        slot.appendChild(input);
-        if (ph.dataUrl) {
-          var im = document.createElement('img'); im.src = ph.dataUrl; im.alt = ''; slot.appendChild(im);
+        // Cases photo (jusqu'à p.multi photos sur une même gravure)
+        var zonePh = document.createElement('div'); zonePh.className = 'u-photos';
+        ph.imgs.forEach(function (url, k) {
+          var s = document.createElement('div'); s.className = 'slot rempli';
+          var im = document.createElement('img'); im.src = url; im.alt = ''; s.appendChild(im);
           var x = document.createElement('button');
           x.type = 'button'; x.className = 'retirer'; x.textContent = '×'; x.setAttribute('aria-label', 'Retirer la photo');
-          x.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); ph.dataUrl = null; dessiner(p); });
-          slot.appendChild(x);
-        } else if (!ph.wait) {
+          x.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); ph.imgs.splice(k, 1); dessiner(p); });
+          s.appendChild(x);
+          if (ph.imgs.length > 1) { var tg = document.createElement('span'); tg.className = 'tag'; tg.textContent = 'photo ' + (k + 1); s.appendChild(tg); }
+          zonePh.appendChild(s);
+        });
+        for (var w = 0; w < ph.wait; w++) { var sw = document.createElement('div'); sw.className = 'slot wait'; zonePh.appendChild(sw); }
+        if (ph.imgs.length + ph.wait < p.multi) {
+          var slot = document.createElement('label'); slot.className = 'slot';
+          var input = document.createElement('input');
+          input.type = 'file'; input.accept = 'image/*'; if (p.multi > 1) input.multiple = true;
+          input.addEventListener('change', function () {
+            var place = p.multi - ph.imgs.length - ph.wait;
+            var files = Array.prototype.slice.call(input.files, 0, Math.max(place, 0));
+            if (input.files.length > place) afficher('err', p.multi + ' photos maximum par gravure : seules les ' + place + ' premières sont ajoutées.');
+            if (totalPhotos() + files.length > MAX_PHOTOS) { afficher('err', MAX_PHOTOS + ' photos maximum par commande.'); files = files.slice(0, Math.max(MAX_PHOTOS - totalPhotos(), 0)); }
+            if (!files.length) return;
+            ph.err = false;
+            files.forEach(function (f) {
+              ph.wait++;
+              compresser(f, function (url) { ph.wait--; ph.imgs.push(url); dessiner(p); verifierProduit(p); },
+                            function () { ph.wait--; dessiner(p); afficher('err', "Impossible de lire « " + f.name + " ». Essaie une autre photo."); });
+            });
+            dessiner(p);
+          });
+          slot.appendChild(input);
           var plus = document.createElement('span'); plus.className = 'plus-photo'; plus.textContent = '+';
-          var txt = document.createElement('span'); txt.textContent = 'Photo';
+          var txt = document.createElement('span'); txt.textContent = ph.imgs.length ? 'Autre photo' : 'Photo';
           slot.appendChild(plus); slot.appendChild(txt);
+          slot.setAttribute('aria-label', 'Photo pour ' + etiquette(p, i));
+          zonePh.appendChild(slot);
         }
-        slot.setAttribute('aria-label', 'Photo pour ' + etiquette(p, i));
-        corps.appendChild(slot);
+        corps.appendChild(zonePh);
+        if (p.multi > 1 && ph.imgs.length > 1) {
+          var note = document.createElement('div'); note.className = 'u-note';
+          note.textContent = 'Ces ' + ph.imgs.length + ' photos seront réunies sur une seule gravure.';
+          corps.appendChild(note);
+        }
 
         // Texte à graver
         var zone = document.createElement('div'); zone.className = 'u-texte';
-        var ou = document.createElement('span'); ou.className = 'ou'; ou.textContent = ph.dataUrl ? 'texte en plus (facultatif)' : 'ou texte à graver';
+        var ou = document.createElement('span'); ou.className = 'ou'; ou.textContent = ph.imgs.length ? 'texte en plus (facultatif)' : 'ou texte à graver';
         var ta = document.createElement('textarea');
         ta.maxLength = 200; ta.placeholder = 'Ex. : Mamie, je t’aime'; ta.value = ph.texte;
         ta.setAttribute('aria-label', 'Texte à graver pour ' + etiquette(p, i));
@@ -313,7 +343,7 @@
         p.slotsEl.appendChild(u);
       });
     }
-    function complet(ph) { return !!ph.dataUrl || !!ph.texte.trim(); }
+    function complet(ph) { return ph.imgs.length > 0 || !!ph.texte.trim(); }
     function verifierProduit(p) {
       if (p.photos.every(complet)) p.el.classList.remove('manque');
     }
@@ -323,7 +353,7 @@
       produits.forEach(function (p) {
         var q = p.photos.length; if (!q) return;
         items.push({ id: p.id, qty: q, detail: p.detail ? p.detail.value.trim() : '',
-                     units: p.photos.map(function (ph) { return { photo: !!ph.dataUrl, texte: ph.texte.trim() }; }) });
+                     units: p.photos.map(function (ph) { return { photo: ph.imgs.length > 0, photos: ph.imgs.length, texte: ph.texte.trim() }; }) });
         if (p.prix === '') devis = true; else total += Number(p.prix) * q;
       });
       var autre = document.getElementById('autreCreation');
@@ -385,17 +415,18 @@
       if (typeof ENVOI_URL === 'undefined') { afficher('err', 'Configuration manquante (config.js).'); return; }
       var r = lireProduits();
       if (!r.items.length) { afficher('err', 'Choisis au moins un modèle avec le bouton +, ou décris ton idée dans « Autre création ».'); return; }
-      if (produits.some(function (p) { return p.photos.some(function (ph) { return ph.wait; }); })) {
+      if (produits.some(function (p) { return p.photos.some(function (ph) { return ph.wait > 0; }); })) {
         afficher('err', 'Photo en préparation, réessaie dans 2 secondes.'); return;
       }
       var prenom = val('prenom') || 'client';
       var photos = [];
       produits.forEach(function (p) {
         p.photos.forEach(function (ph, i) {
-          if (!ph.dataUrl) return;
-          var lab = etiquette(p, i);
-          photos.push({ base64: ph.dataUrl.split(',')[1], mimeType: 'image/jpeg', label: lab,
-                        fileName: (prenom + '_' + lab).replace(/[^a-z0-9]+/gi, '_') + '.jpg' });
+          ph.imgs.forEach(function (url, k) {
+            var lab = etiquette(p, i) + (ph.imgs.length > 1 ? ' – photo ' + (k + 1) + '/' + ph.imgs.length : '');
+            photos.push({ base64: url.split(',')[1], mimeType: 'image/jpeg', label: lab,
+                          fileName: (prenom + '_' + lab).replace(/[^a-z0-9]+/gi, '_') + '.jpg' });
+          });
         });
       });
       var donnees = {
