@@ -1,5 +1,5 @@
 /**
- * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v6.2)
+ * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v7)
  * ==============================================================
  * Les formulaires (festival.html, livraison.html et grimoire.html) sont hébergés sur GitHub Pages.
  * Les commandes du « grimoire du moment » (boules de Noël) arrivent dans l'onglet Livraison.
@@ -7,6 +7,8 @@
  *   1) envoie les photos dans l'album Google Photos "CELARNO28 - Photos reçues"
  *   2) ajoute une ligne dans l'onglet "Festival" ou "Livraison" de la Google Sheet
  *   3) envoie au client un e-mail de confirmation (commandes livraison et boules, qui ont une adresse e-mail)
+ *   4) commandes pour une association partenaire (ex. Bouge nos écoles) : e-mail à l'association,
+ *      colonnes « Association » et « Reversé » dans l'onglet Livraison, suivi dans l'onglet « Associations »
  *
  * Pour chaque modèle commandé, le client peut joindre une photo et/ou un texte à graver (facultatif).
  *
@@ -51,6 +53,22 @@ var PLANNING_GRIMOIRE = [
 var PREPA_JOURS = 21;     // rappel de préparation à partir de 3 semaines avant le lancement
 var FIN_JOURS = 7;        // rappel « dernière semaine » avant la date limite
 
+// Associations partenaires du grimoire (mêmes réglages que associations.js sur GitHub ; ici, c'est le script qui fait foi)
+// reverseUne / reverseDeux : somme reversée pour 1 pièce / pour un lot de 2. dateLimite incluse.
+var ASSOCIATIONS = {
+  'bouge-nos-ecoles': {
+    nom: 'Bouge nos écoles',
+    email: 'bougenosecoles@gmail.com',
+    reverseUne: 3, reverseDeux: 5,
+    dateLimite: '2026-12-16',
+    livraisons: {
+      marche: { texte: 'Retrait au marché de Noël, samedi 5 décembre, salle des fêtes', date: '2026-12-05', jusquau: '2026-12-02' },
+      ecole:  { texte: "Livraison à l'école (date communiquée par l'association)", date: '' }
+    }
+  }
+};
+var ONGLET_ASSOS = 'Associations';
+
 // E-mail de confirmation envoyé au client
 var CONFIRMATION_CLIENT = true;              // false pour ne plus envoyer de confirmation
 var NOM_EXPEDITEUR = "Le Sorcier Artisan – CELARNO28";
@@ -94,9 +112,11 @@ var ONGLETS = {
     marge: MARGE_ENVOI,
     couleurs: true,
     entetes: ['Date', 'Prénom', 'Nom', 'Téléphone', 'E-mail', 'Adresse', 'Code postal', 'Ville',
-              'Commande', 'Total (€)', 'Précisions', 'Photos', 'Répondu', 'Délai', 'Jours restants', 'Réalisé', 'Statut'],
-    largeurs: [130, 100, 110, 120, 190, 220, 90, 130, 360, 80, 220, 170, 80, 100, 90, 100, 160],
-    col: { date: 1, prenom: 2, nom: 3, commande: 9, total: 10, photos: 12, repondu: 13, delai: 14, jours: 15, realise: 16, statut: 17 },
+              'Commande', 'Total (€)', 'Précisions', 'Photos', 'Répondu', 'Délai', 'Jours restants', 'Réalisé', 'Statut',
+              'Association', 'Reversé (€)'],
+    largeurs: [130, 100, 110, 120, 190, 220, 90, 130, 360, 80, 220, 170, 80, 100, 90, 100, 160, 140, 90],
+    col: { date: 1, prenom: 2, nom: 3, commande: 9, total: 10, photos: 12, repondu: 13, delai: 14, jours: 15, realise: 16, statut: 17,
+           asso: 18, reverse: 19 },
     noteJours: 'Jours restants avant d\'EXPÉDIER : délai souhaité par le client − ' + MARGE_ENVOI + ' jours de marge pour l\'envoi.\n' +
                'Vert : plus de 7 j · Orange : 4 à 7 j · Rouge : moins de 4 j · Gris : réalisé.'
   }
@@ -105,7 +125,7 @@ var ONGLETS = {
 // ================== WEB APP ==================
 
 function doGet(e) {
-  return jsonOut_({ ok: true, service: 'CELARNO28 commandes', version: 6 });
+  return jsonOut_({ ok: true, service: 'CELARNO28 commandes', version: 7 });
 }
 
 function doPost(e) {
@@ -161,8 +181,19 @@ function enregistrerCommande_(data) {
     console.error('Confirmation client non envoyée : ' + err.message);
   }
 
+  // Commande pour une association : on la prévient par e-mail
+  var assoMailOk = false;
+  if (c.asso) {
+    try {
+      assoMailOk = envoyerAvisAsso_(c);
+    } catch (err) {
+      console.error('Avis association non envoyé : ' + err.message);
+    }
+  }
+
   // La commande est enregistrée même si une photo a échoué : on prévient le client sans lui faire renvoyer
-  return { success: true, total: c.total, devis: c.devis, photoKo: statut !== 'OK', mailOk: mailOk };
+  return { success: true, total: c.total, devis: c.devis, photoKo: statut !== 'OK', mailOk: mailOk,
+           reverse: c.reverse || 0, assoMailOk: assoMailOk };
 }
 
 /** Compatibilité avec les anciens formulaires (une seule photo + un format). */
@@ -196,6 +227,7 @@ function lireCommande_(d) {
     ville: texte_(d.ville, 80),
     precisions: texte_(d.precisions, 1000),
     delai: null,
+    asso: null, assoId: '', enfant: '', classe: '', livraisonAsso: null, reverse: 0,
     lignes: [],
     total: 0,
     devis: false,
@@ -203,9 +235,27 @@ function lireCommande_(d) {
   };
 
   if (!c.prenom || !c.telephone) throw new Error('Prénom et téléphone sont obligatoires.');
+
+  // Commande au profit d'une association partenaire
+  if (d.asso) {
+    var a = ASSOCIATIONS[String(d.asso)];
+    if (!a || type !== 'livraison') throw new Error('Association inconnue.');
+    if (aujourdhui_() > dateIso_(a.dateLimite)) throw new Error('Les commandes pour ' + a.nom + ' sont closes.');
+    var liv = a.livraisons[String(d.livraisonAsso || '')];
+    if (!liv) throw new Error('Choisis le mode de livraison.');
+    if (liv.jusquau && aujourdhui_() > dateIso_(liv.jusquau)) throw new Error('Ce mode de livraison n\'est plus disponible, choisis-en un autre.');
+    c.asso = a; c.assoId = String(d.asso); c.livraisonAsso = liv;
+    c.enfant = texte_(d.enfant, 60); c.classe = texte_(d.classe, 30);
+    if (!c.enfant || !c.classe) throw new Error("Indique le prénom et la classe de l'enfant.");
+    c.adresse = a.nom + ' – ' + liv.texte; c.cp = ''; c.ville = '';
+    c.delai = liv.date ? dateIso_(liv.date) : null;
+  }
+
   if (type === 'livraison') {
     if (!c.nom) throw new Error('Le nom est obligatoire.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) throw new Error("L'adresse e-mail n'est pas valide.");
+  }
+  if (type === 'livraison' && !c.asso) {
     if (!c.adresse || !c.cp || !c.ville) throw new Error("L'adresse de livraison est incomplète.");
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texte_(d.delai, 10));
     if (!m) throw new Error('Indique la date souhaitée.');
@@ -223,6 +273,7 @@ function lireCommande_(d) {
     qty = Math.min(qty, MAX_MODELES);
     unites += qty;
     var p = CATALOGUE[id];
+    if (c.asso && !p.boule) return;   // une commande association ne contient que des pièces du grimoire
     var detail = texte_(it.detail, 200);
     if (p.detail && !detail) {
       throw new Error('Précise ta demande pour « ' + p.label + ' ».');
@@ -261,6 +312,12 @@ function lireCommande_(d) {
     c.total += prixBoules;
     c.lignes.push('🎄 ' + nbBoules + ' boule(s) de Noël = ' + prixBoules + ' € (' +
                   BOULE_PRIX_UNE + ' € la boule, ' + BOULE_PRIX_DEUX + ' € les 2)');
+  }
+  if (c.asso) {
+    if (!nbBoules) throw new Error('Choisis au moins une boule.');
+    c.reverse = Math.floor(nbBoules / 2) * c.asso.reverseDeux + (nbBoules % 2) * c.asso.reverseUne;
+    c.lignes.push('🏫 ' + c.asso.nom + ' : ' + c.reverse + ' € reversés · enfant : ' + c.enfant + ' (' + c.classe + ')' +
+                  ' · ' + c.livraisonAsso.texte);
   }
   if (unites > MAX_MODELES) throw new Error(MAX_MODELES + ' modèles maximum par commande.');
   c.resume = c.lignes.join('\n');
@@ -314,10 +371,15 @@ function envoyerConfirmation_(c, photoKo) {
     '<h3 style="color:' + bleu + ';margin:18px 0 6px">Ta commande</h3>' +
     '<ul style="padding-left:18px;margin:0">' + lignes + '</ul>' +
     (total ? '<p style="font-size:17px"><b>Total : ' + echapper_(total) + '</b>' +
-             (c.type === 'livraison' ? ' <span style="color:#555">(frais d\'envoi compris)</span>' : '') + '</p>' : '') +
+             (c.type === 'livraison' && !c.asso ? ' <span style="color:#555">(frais d\'envoi compris)</span>' : '') + '</p>' : '') +
+    (c.asso ? '<p style="font-size:16px">🏫 Dont <b>' + c.reverse + ' €</b> reversés à <b>' + echapper_(c.asso.nom) + '</b>. Merci pour l\'école !</p>' : '') +
     (c.photos.length ? '<p>📷 ' + c.photos.length + ' photo' + (c.photos.length > 1 ? 's reçues' : ' reçue') + '.</p>' : '') +
     (photoKo ? '<p style="color:#a50e0e"><b>Attention :</b> une photo n\'a pas pu être enregistrée, je te recontacte pour la récupérer.</p>' : '') +
-    (c.type === 'livraison'
+    (c.asso
+      ? '<h3 style="color:' + bleu + ';margin:18px 0 6px">Livraison</h3><p style="margin:0">' + echapper_(c.livraisonAsso.texte) +
+        '</p><p>Pour : ' + echapper_(c.enfant) + ' (' + echapper_(c.classe) + ')</p>'
+      : '') +
+    (c.type === 'livraison' && !c.asso
       ? '<h3 style="color:' + bleu + ';margin:18px 0 6px">Livraison</h3><p style="margin:0">' +
         echapper_(c.prenom + ' ' + c.nom) + '<br>' + echapper_(c.adresse) + '<br>' + echapper_(c.cp + ' ' + c.ville) + '</p>' +
         (c.delai ? '<p>Date souhaitée : <b>' + Utilities.formatDate(c.delai, tz, 'dd/MM/yyyy') + '</b></p>' : '')
@@ -354,6 +416,119 @@ function testerConfirmation() {
   Logger.log('Confirmation de test envoyée à ' + ALERT_EMAIL);
 }
 
+// ================== ASSOCIATIONS PARTENAIRES ==================
+
+/** Prévient l'association qu'une commande est passée pour elle. Renvoie true si l'e-mail est parti. */
+function envoyerAvisAsso_(c) {
+  if (!c.asso || !c.asso.email) return false;
+  if (MailApp.getRemainingDailyQuota() < 5) return false;
+  var cumul = cumulAsso_(c.asso.nom);
+  var lignes = c.lignes.filter(function (l) { return l.indexOf('🏫') !== 0; }).map(function (l) {
+    return '<li style="margin:3px 0">' + echapper_(l) + '</li>';
+  }).join('');
+  var td = '<td style="padding:4px 10px 4px 0;color:#555">';
+  var html =
+    '<div style="font-family:Arial,sans-serif;font-size:14px;color:#2a1f14;max-width:560px">' +
+    '<p>Bonjour,</p>' +
+    '<p>Une nouvelle commande de boules de Noël vient d\'être passée au profit de <b>' + echapper_(c.asso.nom) + '</b> 🎄</p>' +
+    '<table style="border-collapse:collapse">' +
+    '<tr>' + td + 'Parent</td><td><b>' + echapper_(c.prenom + ' ' + c.nom) + '</b></td></tr>' +
+    '<tr>' + td + 'Téléphone</td><td>' + echapper_(c.telephone) + '</td></tr>' +
+    '<tr>' + td + 'E-mail</td><td>' + echapper_(c.email) + '</td></tr>' +
+    '<tr>' + td + 'Enfant</td><td><b>' + echapper_(c.enfant) + '</b> (' + echapper_(c.classe) + ')</td></tr>' +
+    '<tr>' + td + 'Livraison</td><td>' + echapper_(c.livraisonAsso.texte) + '</td></tr>' +
+    '</table>' +
+    '<p style="margin-bottom:4px"><b>Commande</b></p><ul style="margin-top:0;padding-left:18px">' + lignes + '</ul>' +
+    '<p>Montant de la commande : <b>' + c.total + ' €</b><br>' +
+    '🏫 Reversé à l\'association pour cette commande : <b>' + c.reverse + ' €</b>' +
+    (cumul ? '<br>Total reversé à ce jour : <b>' + cumul.reverse + ' €</b> pour ' + cumul.commandes + ' commande(s)' : '') + '</p>' +
+    (c.precisions ? '<p>Précisions du parent : <i>' + echapper_(c.precisions) + '</i></p>' : '') +
+    '<p>Merci pour ce partenariat !<br><b>Arno – Le Sorcier Artisan</b> · ' + TELEPHONE_CONTACT + '</p>' +
+    '<p style="color:#999;font-size:12px">Ces informations vous sont transmises avec l\'accord du parent, uniquement pour la distribution de sa commande.</p>' +
+    '</div>';
+  MailApp.sendEmail({
+    to: c.asso.email,
+    replyTo: ALERT_EMAIL,
+    name: NOM_EXPEDITEUR,
+    subject: '🎄 Nouvelle commande pour ' + c.asso.nom + ' – ' + c.prenom + ' ' + c.nom + ' (' + c.enfant + ', ' + c.classe + ')',
+    htmlBody: html
+  });
+  return true;
+}
+
+/** Nombre de commandes et total reversé pour une association, lus dans l'onglet Livraison. */
+function cumulAsso_(nom) {
+  var conf = ONGLETS.livraison;
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(conf.nom);
+  if (!sh || sh.getLastRow() < 2 || sh.getLastColumn() < conf.col.reverse) return null;
+  var n = sh.getLastRow() - 1;
+  var assos = sh.getRange(2, conf.col.asso, n, 1).getValues();
+  var rev = sh.getRange(2, conf.col.reverse, n, 1).getValues();
+  var res = { commandes: 0, reverse: 0 };
+  assos.forEach(function (v, i) {
+    if (v[0] === nom) { res.commandes++; res.reverse += Number(rev[i][0]) || 0; }
+  });
+  return res;
+}
+
+/** Onglet « Associations » : une ligne par association, calculée par formules sur l'onglet Livraison.
+ *  La colonne « Déjà versé » est à remplir à la main (elle est conservée quand on relance installer). */
+function preparerOngletAssos_(ss) {
+  var conf = ONGLETS.livraison;
+  var sh = ss.getSheetByName(ONGLET_ASSOS) || ss.insertSheet(ONGLET_ASSOS);
+  var entetes = ['Association', 'E-mail', 'Commandes', 'Ventes (€)', 'À reverser (€)', 'Déjà versé (€)', 'Reste à verser (€)', 'Date limite'];
+  sh.getRange(1, 1, 1, entetes.length).setValues([entetes])
+    .setFontWeight('bold').setBackground('#1b140d').setFontColor('#ecdfc4').setHorizontalAlignment('center').setWrap(true);
+  sh.setFrozenRows(1);
+  [180, 220, 100, 100, 120, 120, 140, 110].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+  var L = "'" + conf.nom + "'!";
+  var colAsso = lettre_(conf.col.asso), colTotal = lettre_(conf.col.total), colRev = lettre_(conf.col.reverse);
+  var existants = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().map(function (v) { return v[0]; }) : [];
+  Object.keys(ASSOCIATIONS).forEach(function (id) {
+    var a = ASSOCIATIONS[id];
+    var i = existants.indexOf(a.nom);
+    var r = i >= 0 ? i + 2 : sh.getLastRow() + 1;
+    if (i < 0) { existants.push(a.nom); sh.getRange(r, 6).setValue(0); }
+    sh.getRange(r, 1, 1, 2).setValues([[a.nom, a.email]]);
+    sh.getRange(r, 3).setFormula('=COUNTIF(' + L + colAsso + ':' + colAsso + ',A' + r + ')');
+    sh.getRange(r, 4).setFormula('=SUMIF(' + L + colAsso + ':' + colAsso + ',A' + r + ',' + L + colTotal + ':' + colTotal + ')');
+    sh.getRange(r, 5).setFormula('=SUMIF(' + L + colAsso + ':' + colAsso + ',A' + r + ',' + L + colRev + ':' + colRev + ')');
+    sh.getRange(r, 7).setFormula('=E' + r + '-F' + r);
+    sh.getRange(r, 8).setValue(dateIso_(a.dateLimite)).setNumberFormat('dd/mm/yyyy');
+    sh.getRange(r, 6).setBackground('#fff2cc').setNote('À remplir à la main : somme déjà versée à l\'association.');
+  });
+  var n = Math.max(sh.getLastRow() - 1, 1);
+  sh.getRange(2, 4, n, 4).setNumberFormat('0 "€"');
+  sh.getRange(2, 3, n, 6).setHorizontalAlignment('center');
+}
+
+/** Pour l'e-mail du matin : une ligne par association qui a des commandes. */
+function blocAssos_() {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ONGLET_ASSOS);
+  if (!sh || sh.getLastRow() < 2) return '';
+  var out = '';
+  sh.getRange(2, 1, sh.getLastRow() - 1, 7).getValues().forEach(function (v) {
+    if (!v[0] || !(Number(v[2]) > 0)) return;
+    out += '<br>🏫 <b>' + echapper_(v[0]) + '</b> : ' + v[2] + ' commande(s), ' + v[3] + ' € de ventes, ' +
+           v[4] + ' € à reverser' + (Number(v[5]) ? ' (déjà versé ' + v[5] + ' €, reste <b>' + v[6] + ' €</b>)' : '');
+  });
+  return out ? '<div style="margin-top:12px;padding:10px 12px;border:1px solid #ccc;border-radius:6px"><b>Associations partenaires</b>' + out + '</div>' : '';
+}
+
+/** Pour tester l'e-mail envoyé à l'association : choisir "testerAvisAsso" puis Exécuter (il arrive sur ALERT_EMAIL). */
+function testerAvisAsso() {
+  var id = Object.keys(ASSOCIATIONS)[0];
+  var c = lireCommande_({
+    type: 'livraison', grimoire: true, asso: id, livraisonAsso: Object.keys(ASSOCIATIONS[id].livraisons).pop(),
+    prenom: 'Arno', nom: 'Test', telephone: '0600000000', email: ALERT_EMAIL, enfant: 'Léa', classe: 'CE1',
+    items: [{ id: 'bouleFlocons', qty: 2, units: [{ texte: 'Léa' }, { texte: 'Noé' }] }], photos: []
+  });
+  var vrai = c.asso.email;
+  c.asso = JSON.parse(JSON.stringify(c.asso)); c.asso.email = ALERT_EMAIL;   // le test ne part pas chez l'association
+  envoyerAvisAsso_(c);
+  Logger.log('Avis de test envoyé à ' + ALERT_EMAIL + ' (en vrai, il part à ' + vrai + ')');
+}
+
 // ================== GOOGLE SHEET ==================
 
 function getOnglet_(type) {
@@ -378,7 +553,8 @@ function ecrireLigne_(c, liens, statut) {
     var ligne;
     if (c.type === 'livraison') {
       ligne = [new Date(), c.prenom, c.nom, tel, c.email, c.adresse, "'" + c.cp, c.ville,
-               c.resume, total, c.precisions, '', false, c.delai, joursRestants_(c.delai, '', conf.marge), '', statut];
+               c.resume, total, c.precisions, '', false, c.delai, joursRestants_(c.delai, '', conf.marge), '', statut,
+               c.asso ? c.asso.nom : '', c.asso ? c.reverse : ''];
     } else {
       ligne = [new Date(), c.prenom, tel, c.resume, total, '', false, '', '', '', statut];
     }
@@ -409,6 +585,11 @@ function lienPhotos_(liens, photos) {
 }
 
 // ---------- Jours restants ----------
+
+/** "2026-12-16" → Date à minuit (heure du script). */
+function dateIso_(s) {
+  var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]);
+}
 
 function aujourdhui_() {
   var d = new Date(); d.setHours(0, 0, 0, 0); return d;
@@ -479,6 +660,7 @@ function preparerOnglet_(sh, conf) {
   sh.getRange(2, 1, max - 1, n).setVerticalAlignment('middle');
   sh.getRange(2, conf.col.date, max - 1, 1).setNumberFormat('dd/mm/yyyy hh:mm');
   sh.getRange(2, conf.col.total, max - 1, 1).setNumberFormat('0 "€"');
+  if (conf.col.reverse) sh.getRange(2, conf.col.reverse, max - 1, 1).setNumberFormat('0 "€"').setHorizontalAlignment('center');
   sh.getRange(2, conf.col.commande, max - 1, 1).setWrap(true);
   sh.getRange(2, conf.col.jours, max - 1, 1).setNumberFormat('0" j"').setHorizontalAlignment('center').setFontWeight('bold');
 
@@ -642,7 +824,7 @@ function alerteDelais() {
       subject: '✅ CELARNO28 – aucune commande en cours, tout fonctionne',
       htmlBody: '<p>Bonjour Arno,</p>' +
         '<p>Aucune commande en cours ce matin. Le script de commande fonctionne normalement ✅</p>' +
-        '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' + blocRoutine_(tz) +
+        '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' + blocAssos_() + blocRoutine_(tz) +
         '<p style="color:#888">Si un matin tu ne reçois aucun e-mail CELARNO28, le script a un problème : ' +
         'ouvre le lien /exec du formulaire sur ton PC pour vérifier (autorisation à renouveler, etc.).</p>'
     });
@@ -658,7 +840,7 @@ function alerteDelais() {
     '<th>Commande</th><th>Délai client</th><th>Répondu</th></tr>' +
     lignes.map(function (l) { return l.html; }).join('') + '</table>' +
     '<p>Livraisons : 🟥 moins de ' + SEUIL_ROUGE + ' j · 🟧 ' + SEUIL_ROUGE + ' à ' + SEUIL_VERT + ' j · 🟩 plus de ' + SEUIL_VERT + ' j</p>' +
-    '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' + blocRoutine_(tz) +
+    '<p><a href="' + ss.getUrl() + '">Ouvrir le suivi des commandes</a></p>' + blocAssos_() + blocRoutine_(tz) +
     '<p style="color:#888">Une commande sort de cette liste dès que la case « Réalisé » est remplie.<br>' +
     'Ce récap arrive chaque matin, même sans commande : s\'il manque un jour, vérifie le script.</p>';
   MailApp.sendEmail({
@@ -685,6 +867,8 @@ function installer() {
     var sh = ss.getSheetByName(conf.nom) || ss.insertSheet(conf.nom);
     preparerOnglet_(sh, conf);
   });
+
+  preparerOngletAssos_(ss);
 
   // Rappels automatiques (on supprime les anciens pour éviter les doublons)
   ScriptApp.getProjectTriggers().forEach(function (t) {

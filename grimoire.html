@@ -149,6 +149,23 @@
     .zoom.ouvert { display: flex; }
     .zoom img { max-width: 100%; max-height: 90vh; border: 3px solid var(--brass); border-radius: 8px; }
     @media (max-width: 360px) { .boules { grid-template-columns: 1fr; } }
+    /* ----- Choix « pour qui » et associations ----- */
+    .qui { display: flex; gap: 14px; align-items: center; width: 100%; text-align: left; cursor: pointer; margin-top: 14px; padding: 16px;
+           background: var(--field); border: 1px solid var(--brass-dark); border-radius: 8px; color: var(--parchment); font: inherit; }
+    .qui:hover, .qui:focus { border-color: var(--brass); box-shadow: 0 0 0 2px rgba(201,151,75,.25); outline: none; }
+    .qui .ico { font-size: 34px; line-height: 1; flex-shrink: 0; }
+    .qui strong { display: block; font-family: 'Cinzel Decorative', serif; color: var(--brass); font-size: 16px; margin-bottom: 3px; }
+    .qui span.t { color: var(--soft); font-size: 16px; line-height: 1.3; }
+    .qui .fleche { margin-left: auto; color: var(--brass); font-size: 26px; }
+    .bandeau-asso { margin: 4px 0 8px; padding: 12px 14px; border: 1px solid var(--brass); border-radius: 8px; background: rgba(201,151,75,.10);
+                    color: var(--parchment); font-size: 17px; line-height: 1.4; }
+    .bandeau-asso b { color: var(--brass); }
+    .bandeau-asso a { color: var(--soft); font-size: 14px; }
+    .reverse { display: block; margin-top: 4px; color: var(--brass); font-size: 16px; }
+    .radio { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--brass-dark);
+             border-radius: 6px; background: var(--field); cursor: pointer; font-size: 16px; line-height: 1.35; color: var(--parchment); }
+    .radio input { margin-top: 3px; accent-color: var(--brass); width: 18px; height: 18px; flex-shrink: 0; }
+
   </style>
 </head>
 <body>
@@ -158,9 +175,15 @@
     <p class="subtitle" id="sousTitre"></p>
     <p class="offre" id="offre"></p>
 
+    <div id="etapeQui" style="display:none">
+      <h2>Pour qui commandes-tu ?</h2>
+      <div id="listeQui"></div>
+    </div>
+
     <form id="commande" data-type="livraison"
           data-merci="Merci {prenom} ! Ta commande est bien enregistrée. Je te recontacte rapidement pour la valider avec toi.">
 
+      <div class="bandeau-asso" id="bandeauAsso" style="display:none"></div>
       <h2 id="titreChoix">Choisis tes modèles</h2>
       <div id="modeles"></div>
       <div class="total" id="total"></div>
@@ -175,6 +198,17 @@
       <label class="lbl" for="email">E-mail</label>
       <input type="email" id="email" autocomplete="email" placeholder="toi@exemple.fr" required>
 
+      <div id="blocAsso" style="display:none">
+        <h2>Pour l'école</h2>
+        <div class="row2">
+          <div><label class="lbl" for="enfant">Prénom de l'enfant</label><input type="text" id="enfant" maxlength="60"></div>
+          <div><label class="lbl" for="classe">Classe</label><input type="text" id="classe" maxlength="30" placeholder="Ex. : CE1"></div>
+        </div>
+        <h2>Livraison</h2>
+        <div id="choixLivraison"></div>
+      </div>
+
+      <div id="blocAdresse">
       <h2>Adresse de livraison</h2>
       <label class="lbl" for="adresse">Adresse</label>
       <input type="text" id="adresse" autocomplete="street-address" placeholder="N° et rue" required>
@@ -187,13 +221,14 @@
       <label class="lbl" for="delai">Date à laquelle tu souhaites recevoir ta commande</label>
       <input type="date" id="delai" required>
       <p class="hint">Compte au moins 3 jours pour l'envoi postal. Frais d'envoi compris.</p>
+      </div>
 
       <label class="lbl" for="precisions">Précisions (facultatif)</label>
       <textarea id="precisions" maxlength="1000" placeholder="Une remarque, une idée cadeau…"></textarea>
 
       <label class="consent">
         <input type="checkbox" required>
-        <span>J'accepte que CELARNO28 utilise mes prénoms, textes et coordonnées pour traiter et livrer ma commande. <a href="confidentialite.html" target="_blank" style="color:var(--brass)">En savoir plus</a></span>
+        <span>J'accepte que CELARNO28 utilise mes prénoms, textes et coordonnées pour traiter et livrer ma commande<span id="consentAsso"></span>. <a href="confidentialite.html" target="_blank" style="color:var(--brass)">En savoir plus</a></span>
       </label>
       <button type="submit" class="submit" id="envoyer">Envoyer ma commande</button>
       <div class="msg" id="msg"></div>
@@ -208,6 +243,7 @@
 
   <script src="config.js"></script>
   <script src="collection.js"></script>
+  <script src="associations.js"></script>
   <script>
     // Réglages de la collection : voir le fichier collection.js
     var C = COLLECTION;
@@ -222,7 +258,7 @@
     document.getElementById('titreChoix').textContent = 'Choisis tes ' + US;
     document.getElementById('titreMerci').textContent = 'Merci ! ' + C.emoji;
     document.getElementById('offre').innerHTML = '<b>' + PRIX_UNE + ' €</b> ' + (C.article === 'un' ? 'le ' : 'la ') + U +
-      (PRIX_DEUX ? ' · <b>' + PRIX_DEUX + ' € les 2</b>' : '') + ' · <b>envoi compris</b><br>' +
+      (PRIX_DEUX ? ' · <b>' + PRIX_DEUX + ' € les 2</b>' : '') + '<span id="envoiCompris"> · <b>envoi compris</b></span><br>' +
       '<span id="limite" style="color:var(--brass)">' + C.emoji + ' Commandes jusqu\'au ' + C.dateTexte() + '</span><br>' +
       '<small>Choisis tes modèles, écris un ' + C.champ + ' par ' + U + ' (' + MAX_CARACTERES + ' caractères max).</small>';
 
@@ -239,6 +275,72 @@
       document.getElementById('offre').style.display = 'none';
     }
     var TYPE = form.getAttribute('data-type');
+
+    // ----- Pour qui ? (particulier ou association partenaire) -----
+    var ASSO = null;
+    var etapeQui = document.getElementById('etapeQui');
+    function echap(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function texteReverse(a) {
+      return '<b>' + a.reverseUne + ' €</b> par ' + U + (a.reverseDeux ? ' (<b>' + a.reverseDeux + ' €</b> pour 2)' : '') + ' reversés à l\'école';
+    }
+    function setMode(a) {
+      ASSO = a || null;
+      etapeQui.style.display = 'none';
+      form.style.display = 'block';
+      var band = document.getElementById('bandeauAsso');
+      band.style.display = ASSO ? 'block' : 'none';
+      if (ASSO) {
+        band.innerHTML = ASSO.emoji + ' Commande au profit de <b>' + echap(ASSO.nom) + '</b>' +
+          (ASSO.description ? ' <small>(' + echap(ASSO.description) + ')</small>' : '') + '<br>' + texteReverse(ASSO) +
+          '<br>Commandes jusqu\'au <b>' + ASSO.dateTexte() + '</b>' +
+          (associationsActives(C).length ? ' · <a href="#" id="changerQui">changer</a>' : '');
+        var ch = document.getElementById('changerQui');
+        if (ch) ch.addEventListener('click', function (e) { e.preventDefault(); montrerQui(); });
+      }
+      document.getElementById('blocAdresse').style.display = ASSO ? 'none' : 'block';
+      document.getElementById('blocAsso').style.display = ASSO ? 'block' : 'none';
+      ['adresse', 'cp', 'ville', 'delai'].forEach(function (id) { document.getElementById(id).required = !ASSO; });
+      ['enfant', 'classe'].forEach(function (id) { document.getElementById(id).required = !!ASSO; });
+      var zl = document.getElementById('choixLivraison'); zl.innerHTML = '';
+      if (ASSO) {
+        ASSO.livraisonsDispo().forEach(function (l, i) {
+          var lab = document.createElement('label'); lab.className = 'radio';
+          lab.innerHTML = '<input type="radio" name="livraisonAsso" value="' + l.id + '"' + (i === 0 ? ' checked' : '') + ' required><span>' + echap(l.texte) + '</span>';
+          zl.appendChild(lab);
+        });
+      }
+      document.getElementById('consentAsso').textContent = ASSO
+        ? ', et que ma commande (mes coordonnées, le prénom et la classe de mon enfant) soit transmise à l\'association ' + ASSO.nom : '';
+      var ec = document.getElementById('envoiCompris'); if (ec) ec.style.display = ASSO ? 'none' : 'inline';
+      var lim = document.getElementById('limite');
+      if (lim) lim.textContent = C.emoji + ' Commandes jusqu\'au ' + (ASSO ? ASSO.dateTexte() : C.dateTexte());
+      majTotal();
+    }
+    function montrerQui() {
+      form.style.display = 'none';
+      etapeQui.style.display = 'block';
+      var liste = document.getElementById('listeQui'); liste.innerHTML = '';
+      function bouton(ico, titre, texte, action) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'qui';
+        b.innerHTML = '<span class="ico">' + ico + '</span><span><strong>' + titre + '</strong><span class="t">' + texte + '</span></span><span class="fleche">›</span>';
+        b.addEventListener('click', function () { action(); window.scrollTo(0, 0); });
+        liste.appendChild(b);
+      }
+      bouton('🎁', 'Pour moi ou en cadeau', 'Livraison chez toi, envoi compris', function () { setMode(null); });
+      associationsActives(C).forEach(function (a) {
+        bouton(a.emoji, 'Pour ' + echap(a.nom), echap(a.description || 'Association partenaire') + ' : ' +
+          a.reverseUne + ' € par ' + U + ' reversés à l\'école', function () { setMode(a); });
+      });
+    }
+    function demarrer() {
+      if (!C.ouverte()) return;
+      var actives = associationsActives(C);
+      var m = /[?&]asso=([^&#]+)/.exec(location.search);
+      var demande = m ? actives.filter(function (a) { return a.id === decodeURIComponent(m[1]); })[0] : null;
+      if (demande) setMode(demande);
+      else if (actives.length) montrerQui();
+      else setMode(null);
+    }
     var msg = document.getElementById('msg');
     var btn = document.getElementById('envoyer');
     var totalEl = document.getElementById('total');
@@ -339,9 +441,10 @@
       var n = nbBoules();
       if (!n) { totalEl.innerHTML = ''; return; }
       var t = prixTotal(n);
-      totalEl.innerHTML = 'Total : ' + t + ' € <small>envoi compris</small><br><small>' + n + ' ' + pluriel(n) +
+      totalEl.innerHTML = 'Total : ' + t + ' €' + (ASSO ? '' : ' <small>envoi compris</small>') + '<br><small>' + n + ' ' + pluriel(n) +
         (!PRIX_DEUX ? '' : n >= 2 ? ' · tarif 2 pour ' + PRIX_DEUX + ' € appliqué'
-                                  : ' · ajoute-en ' + C.article + ' 2ᵉ : les 2 pour ' + PRIX_DEUX + ' €') + '</small>';
+                                  : ' · ajoute-en ' + C.article + ' 2ᵉ : les 2 pour ' + PRIX_DEUX + ' €') + '</small>' +
+        (ASSO ? '<span class="reverse">' + ASSO.emoji + ' dont <b>' + ASSO.reverse(n) + ' €</b> reversés à ' + echap(ASSO.nom) + '</span>' : '');
     }
 
     var delaiEl = document.getElementById('delai');
@@ -377,6 +480,13 @@
         adresse: val('adresse'), cp: val('cp'), ville: val('ville'), delai: val('delai'), precisions: val('precisions'),
         items: items, photos: []
       };
+      if (ASSO) {
+        var choix = form.querySelector('input[name=livraisonAsso]:checked');
+        if (!choix) { afficher('err', 'Choisis le mode de livraison.'); return; }
+        donnees.asso = ASSO.id; donnees.enfant = val('enfant'); donnees.classe = val('classe');
+        donnees.livraisonAsso = choix.value;
+        donnees.adresse = ''; donnees.cp = ''; donnees.ville = ''; donnees.delai = '';
+      }
       btn.disabled = true;
       afficher('', '<span class="spinner"></span>Envoi en cours… ne ferme pas la page');
       fetch(ENVOI_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(donnees) })
@@ -385,6 +495,7 @@
           btn.disabled = false;
           if (res && res.success) {
             document.getElementById('merciTexte').innerHTML = form.getAttribute('data-merci').replace('{prenom}', donnees.prenom) +
+              (ASSO ? '<br>' + ASSO.emoji + ' <b>' + ASSO.reverse(n) + ' €</b> seront reversés à ' + echap(ASSO.nom) + '. Merci pour l\'école !' : '') +
               (res.mailOk ? '<br>📧 Un récapitulatif vient de t\'être envoyé par e-mail (pense à regarder dans les indésirables).' : '');
             form.style.display = 'none';
             document.getElementById('merci').style.display = 'block';
@@ -402,9 +513,11 @@
       MODELES.forEach(function (m) { m.noms = []; maj(m, false); });
       delaiEl.min = t0.toISOString().slice(0, 10);
       document.getElementById('merci').style.display = 'none';
-      form.style.display = 'block';
+      if (ASSO) setMode(ASSO); else demarrer();
       window.scrollTo(0, 0);
     });
+
+    demarrer();
   </script>
 </body>
 </html>
