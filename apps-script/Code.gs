@@ -1,5 +1,5 @@
 /**
- * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v8)
+ * CELARNO28 — Le Sorcier Artisan — Réception des commandes (v9)
  * ==============================================================
  * Les formulaires (festival.html, livraison.html et grimoire.html) sont hébergés sur GitHub Pages.
  * Les commandes du « grimoire du moment » (boules de Noël) arrivent dans l'onglet Livraison.
@@ -64,9 +64,10 @@ var ASSOCIATIONS = {
     email: 'bougenosecoles@gmail.com',
     reverseUne: 3, reverseDeux: 5,
     dateLimite: '2026-12-16',
+    paiement: 'https://www.helloasso.com/associations/bouge-nos-ecoles/boutiques/vente-de-boule-de-noel',
     livraisons: {
-      marche: { texte: 'Retrait au marché de Noël, samedi 5 décembre, salle des fêtes', date: '2026-12-05', jusquau: '2026-12-02' },
-      ecole:  { texte: "Livraison à l'école (date communiquée par l'association)", date: '' }
+      marche: { texte: 'Retrait au marché de Noël, samedi 5 décembre, salle des fêtes de Bazoches-en-Dunois (commande réglée avant le 4 décembre)', date: '2026-12-05', jusquau: '2026-12-03' },
+      ecole:  { texte: 'Retrait au périscolaire les 17 et 18 décembre, en venant chercher vos enfants', date: '2026-12-17' }
     }
   }
 };
@@ -377,6 +378,10 @@ function envoyerConfirmation_(c, photoKo) {
     (total ? '<p style="font-size:17px"><b>Total : ' + echapper_(total) + '</b>' +
              (c.type === 'livraison' && !c.asso ? ' <span style="color:#555">(frais d\'envoi compris)</span>' : '') + '</p>' : '') +
     (c.asso ? '<p style="font-size:16px">🏫 Dont <b>' + c.reverse + ' €</b> reversés à <b>' + echapper_(c.asso.nom) + '</b>. Merci pour l\'école !</p>' : '') +
+    (c.asso && c.asso.paiement
+      ? '<p style="font-size:16px;color:#a50e0e"><b>⚠️ Dernière étape obligatoire :</b> règle ta commande sur HelloAsso, sinon elle ne pourra pas être réalisée.</p>' +
+        '<p><a href="' + c.asso.paiement + '" style="display:inline-block;padding:10px 18px;background:#c9974b;color:#1a120b;border-radius:6px;text-decoration:none;font-weight:bold">Payer ma commande sur HelloAsso</a></p>'
+      : '') +
     (c.photos.length ? '<p>📷 ' + c.photos.length + ' photo' + (c.photos.length > 1 ? 's reçues' : ' reçue') + '.</p>' : '') +
     (photoKo ? '<p style="color:#a50e0e"><b>Attention :</b> une photo n\'a pas pu être enregistrée, je te recontacte pour la récupérer.</p>' : '') +
     (c.asso

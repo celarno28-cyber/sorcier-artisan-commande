@@ -16,10 +16,11 @@ var ASSOCIATIONS = [
     reverseUne: 3,                         // reversé pour 1 pièce
     reverseDeux: 5,                        // reversé pour un lot de 2
     dateLimite: '2026-12-16',              // dernier jour de commande (inclus)
+    paiement: 'https://www.helloasso.com/associations/bouge-nos-ecoles/boutiques/vente-de-boule-de-noel', // règlement obligatoire sur HelloAsso
     // Modes de livraison proposés aux familles. « jusquau » : dernier jour où le choix est proposé.
     livraisons: [
-      { id: 'marche', texte: 'Retrait au marché de Noël, samedi 5 décembre, à la salle des fêtes', date: '2026-12-05', jusquau: '2026-12-02' },
-      { id: 'ecole',  texte: "Livraison à l'école (date communiquée par l'association)", date: '' }
+      { id: 'marche', texte: 'Retrait au marché de Noël, samedi 5 décembre, à la salle des fêtes de Bazoches-en-Dunois (commande réglée avant le 4 décembre)', date: '2026-12-05', jusquau: '2026-12-03' },
+      { id: 'ecole',  texte: 'Retrait au périscolaire les 17 et 18 décembre, en venant chercher vos enfants', date: '2026-12-17' }
     ]
   }
 ];

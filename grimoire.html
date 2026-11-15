@@ -161,6 +161,11 @@
                     color: var(--parchment); font-size: 17px; line-height: 1.4; }
     .bandeau-asso b { color: var(--brass); }
     .bandeau-asso a { color: var(--soft); font-size: 14px; }
+    .payer { margin: 14px 0; padding: 14px; border: 2px solid var(--brass); border-radius: 8px; background: rgba(201,151,75,.12); text-align: center; }
+    .payer p { margin: 0 0 10px; }
+    .merci a.btn-payer, a.btn-payer { display: inline-block; padding: 12px 22px; background: var(--brass); color: #1a120b; border-radius: 8px;
+                 font-weight: bold; font-size: 18px; text-decoration: none; }
+    .bandeau-asso .alerte { display: block; margin-top: 6px; font-size: 15px; color: var(--soft); }
     .reverse { display: block; margin-top: 4px; color: var(--brass); font-size: 16px; }
     .radio { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--brass-dark);
              border-radius: 6px; background: var(--field); cursor: pointer; font-size: 16px; line-height: 1.35; color: var(--parchment); }
@@ -293,7 +298,8 @@
         band.innerHTML = ASSO.emoji + ' Commande au profit de <b>' + echap(ASSO.nom) + '</b>' +
           (ASSO.description ? ' <small>(' + echap(ASSO.description) + ')</small>' : '') + '<br>' + texteReverse(ASSO) +
           '<br>Commandes jusqu\'au <b>' + ASSO.dateTexte() + '</b>' +
-          (associationsActives(C).length ? ' · <a href="#" id="changerQui">changer</a>' : '');
+          (associationsActives(C).length ? ' · <a href="#" id="changerQui">changer</a>' : '') +
+          (ASSO.paiement ? '<span class="alerte">⚠️ Après l\'envoi, règle ta commande sur <b>HelloAsso</b> (lien affiché à la fin) : sans paiement, elle ne pourra pas être réalisée.</span>' : '');
         var ch = document.getElementById('changerQui');
         if (ch) ch.addEventListener('click', function (e) { e.preventDefault(); montrerQui(); });
       }
@@ -494,8 +500,15 @@
         .then(function (res) {
           btn.disabled = false;
           if (res && res.success) {
-            document.getElementById('merciTexte').innerHTML = form.getAttribute('data-merci').replace('{prenom}', donnees.prenom) +
-              (ASSO ? '<br>' + ASSO.emoji + ' <b>' + ASSO.reverse(n) + ' €</b> seront reversés à ' + echap(ASSO.nom) + '. Merci pour l\'école !' : '') +
+            var payer = (ASSO && ASSO.paiement)
+              ? '<div class="payer"><p>⚠️ <b>Dernière étape obligatoire :</b> règle tes ' + n + ' ' + pluriel(n) + ' (<b>' + prixTotal(n) + ' €</b>) sur HelloAsso. ' +
+                'Sans paiement, ta commande ne pourra pas être réalisée.</p>' +
+                '<a class="btn-payer" href="' + ASSO.paiement + '" target="_blank" rel="noopener">Payer ma commande sur HelloAsso</a></div>'
+              : '';
+            document.getElementById('merciTexte').innerHTML = (ASSO
+                ? 'Merci ' + echap(donnees.prenom) + ' ! Ta commande est bien enregistrée.'
+                : form.getAttribute('data-merci').replace('{prenom}', donnees.prenom)) +
+              (ASSO ? '<br>' + ASSO.emoji + ' <b>' + ASSO.reverse(n) + ' €</b> seront reversés à ' + echap(ASSO.nom) + '. Merci pour l\'école !' : '') + payer +
               (res.mailOk ? '<br>📧 Un récapitulatif vient de t\'être envoyé par e-mail (pense à regarder dans les indésirables).' : '');
             form.style.display = 'none';
             document.getElementById('merci').style.display = 'block';
