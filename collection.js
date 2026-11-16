@@ -10,7 +10,7 @@ var PLANNING = [
     nom: 'Boules de Noël', emoji: '🎄', debut: '2026-11-07', dateLimite: '2026-12-19',
     sousTitre: 'Boules de Noël en bois gravées à votre prénom',
     unite: 'boule', unites: 'boules', article: 'une',
-    prixUne: 6, prixDeux: 10, maxCaracteres: 12, champ: 'prénom', exemple: 'Léa',
+    prixUne: 9, prixDeux: 15, maxCaracteres: 12, champ: 'prénom', exemple: 'Léa',
     // x, y = centre de la zone du texte (% de l'image) ; l = largeur utile (%)
     modeles: [
       { id: 'bouleCerfSapin', nom: 'Cerf & sapin', img: 'boule-cerf-sapin.jpg', vierge: 'boule-cerf-sapin-vierge.jpg', x: 48.3, y: 57.7, l: 62 },

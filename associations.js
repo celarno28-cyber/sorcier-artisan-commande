@@ -13,6 +13,8 @@ var ASSOCIATIONS = [
     description: "Association des parents d'élèves",
     emoji: '🏫',
     collection: 'Boules de Noël',          // nom de la collection du grimoire concernée (collection.js)
+    prixUne: 6,                            // prix payé par les familles pour 1 pièce (pas d'envoi : retrait sur place)
+    prixDeux: 10,                          // prix payé pour un lot de 2
     reverseUne: 3,                         // reversé pour 1 pièce
     reverseDeux: 5,                        // reversé pour un lot de 2
     dateLimite: '2026-12-16',              // dernier jour de commande (inclus)
