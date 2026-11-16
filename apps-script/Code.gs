@@ -35,8 +35,9 @@ var MAX_PHOTOS_GRAVURE = 4;                 // photos maximum sur une même grav
 var MAX_PHOTOS = 40;                        // photos maximum par commande
 
 // Boules de Noël (grimoire du moment) : prix à l'unité et prix par lot de 2, toutes boules confondues
-var BOULE_PRIX_UNE = 6;
-var BOULE_PRIX_DEUX = 10;
+// (envoi compris ; les associations partenaires ont leurs propres prix, voir ASSOCIATIONS)
+var BOULE_PRIX_UNE = 9;
+var BOULE_PRIX_DEUX = 15;
 var BOULE_MAX_CARACTERES = 12;
 
 // Lien du formulaire, utilisé pour le rappel « commande test » du lundi dans l'e-mail du matin
@@ -62,6 +63,7 @@ var ASSOCIATIONS = {
   'bouge-nos-ecoles': {
     nom: 'Bouge nos écoles',
     email: 'bougenosecoles@gmail.com',
+    prixUne: 6, prixDeux: 10,   // prix payé par les familles (retrait sur place, pas d'envoi)
     reverseUne: 3, reverseDeux: 5,
     dateLimite: '2026-12-16',
     paiement: 'https://www.helloasso.com/associations/bouge-nos-ecoles/boutiques/vente-de-boule-de-noel',
@@ -313,10 +315,12 @@ function lireCommande_(d) {
   });
   if (!c.lignes.length) throw new Error('Choisis au moins un produit.');
   if (nbBoules) {
-    var prixBoules = Math.floor(nbBoules / 2) * BOULE_PRIX_DEUX + (nbBoules % 2) * BOULE_PRIX_UNE;
+    var pUne = (c.asso && c.asso.prixUne) || BOULE_PRIX_UNE;
+    var pDeux = (c.asso && c.asso.prixUne) ? (c.asso.prixDeux || 0) : BOULE_PRIX_DEUX;
+    var prixBoules = pDeux ? Math.floor(nbBoules / 2) * pDeux + (nbBoules % 2) * pUne : nbBoules * pUne;
     c.total += prixBoules;
     c.lignes.push('🎄 ' + nbBoules + ' boule(s) de Noël = ' + prixBoules + ' € (' +
-                  BOULE_PRIX_UNE + ' € la boule, ' + BOULE_PRIX_DEUX + ' € les 2)');
+                  pUne + ' € la boule' + (pDeux ? ', ' + pDeux + ' € les 2' : '') + ')');
   }
   if (c.asso) {
     if (!nbBoules) throw new Error('Choisis au moins une boule.');

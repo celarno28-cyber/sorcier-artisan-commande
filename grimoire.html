@@ -262,10 +262,23 @@
     document.getElementById('sousTitre').textContent = C.sousTitre;
     document.getElementById('titreChoix').textContent = 'Choisissez vos ' + US;
     document.getElementById('titreMerci').textContent = 'Merci ! ' + C.emoji;
-    document.getElementById('offre').innerHTML = '<b>' + PRIX_UNE + ' €</b> ' + (C.article === 'un' ? 'le ' : 'la ') + U +
-      (PRIX_DEUX ? ' · <b>' + PRIX_DEUX + ' € les 2</b>' : '') + '<span id="envoiCompris"> · <b>envoi compris</b></span><br>' +
-      '<span id="limite" style="color:var(--brass)">' + C.emoji + ' Commandes jusqu\'au ' + C.dateTexte() + '</span><br>' +
-      '<small>Choisissez vos modèles, écrivez un ' + C.champ + ' par ' + U + ' (' + MAX_CARACTERES + ' caractères max).</small>';
+    // Prix : ceux de la collection (envoi compris) ; une association partenaire peut avoir ses propres prix (retrait sur place)
+    function prixPour(a) {
+      return (a && a.prixUne) ? { une: a.prixUne, deux: a.prixDeux || 0 } : { une: C.prixUne, deux: C.prixDeux };
+    }
+    function majOffre() {
+      var p = prixPour(ASSO);
+      PRIX_UNE = p.une; PRIX_DEUX = p.deux;
+      document.getElementById('offre').innerHTML = '<b>' + PRIX_UNE + ' €</b> ' + (C.article === 'un' ? 'le ' : 'la ') + U +
+        (PRIX_DEUX ? ' · <b>' + PRIX_DEUX + ' € les 2</b>' : '') + (ASSO ? '' : ' · <b>envoi compris</b>') + '<br>' +
+        '<span id="limite" style="color:var(--brass)">' + C.emoji + ' Commandes jusqu\'au ' + (ASSO ? ASSO.dateTexte() : C.dateTexte()) + '</span><br>' +
+        '<small>Choisissez vos modèles, écrivez un ' + C.champ + ' par ' + U + ' (' + MAX_CARACTERES + ' caractères max).</small>';
+      Array.prototype.forEach.call(document.querySelectorAll('.m-prix'), function (el) {
+        el.textContent = PRIX_UNE + ' € ' + (C.article === 'un' ? 'le ' : 'la ') + U;
+      });
+    }
+    var ASSO = null;
+    majOffre();
 
     var form = document.getElementById('commande');
 
@@ -282,7 +295,6 @@
     var TYPE = form.getAttribute('data-type');
 
     // ----- Pour qui ? (particulier ou association partenaire) -----
-    var ASSO = null;
     var etapeQui = document.getElementById('etapeQui');
     function echap(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     function texteReverse(a) {
@@ -317,9 +329,7 @@
       }
       document.getElementById('consentAsso').textContent = ASSO
         ? ', et que ma commande (mes coordonnées, le prénom et la classe de mon enfant) soit transmise à l\'association ' + ASSO.nom : '';
-      var ec = document.getElementById('envoiCompris'); if (ec) ec.style.display = ASSO ? 'none' : 'inline';
-      var lim = document.getElementById('limite');
-      if (lim) lim.textContent = C.emoji + ' Commandes jusqu\'au ' + (ASSO ? ASSO.dateTexte() : C.dateTexte());
+      majOffre();
       majTotal();
     }
     function montrerQui() {
@@ -354,7 +364,7 @@
     zoom.addEventListener('click', function () { zoom.classList.remove('ouvert'); });
 
     function nbBoules() { return MODELES.reduce(function (n, m) { return n + m.noms.length; }, 0); }
-    function prixTotal(n) { return C.prix(n); }
+    function prixTotal(n) { return PRIX_DEUX ? Math.floor(n / 2) * PRIX_DEUX + (n % 2) * PRIX_UNE : n * PRIX_UNE; }
 
     var zone = document.getElementById('modeles');
     MODELES.forEach(function (m, idx) {
