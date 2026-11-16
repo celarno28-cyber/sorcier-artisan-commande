@@ -134,14 +134,14 @@
     <p class="bois">Toutes mes créations sont gravées sur bois</p>
 
     <form id="commande" data-type="festival"
-          data-merci="Merci {prenom} ! Ta commande est bien arrivée, je m'en occupe.">
+          data-merci="Merci {prenom} ! Votre commande est bien arrivée, je m'en occupe.">
       <label class="lbl" for="prenom">Prénom</label>
       <input type="text" id="prenom" autocomplete="given-name" required>
       <label class="lbl" for="telephone">Téléphone</label>
       <input type="tel" id="telephone" autocomplete="tel" placeholder="06 12 34 56 78" required>
 
       <h2>Gravure photo sur bois</h2>
-      <p class="intro-photo">Choisis tes modèles avec le bouton +. Pour chacun, tu peux ajouter <b>une photo</b> ou écrire <b>le texte à graver</b> (facultatif).<br>Plusieurs photos à réunir sur une même gravure&nbsp;? Ajoutes-en <b>jusqu’à 4</b> par gravure.</p>
+      <p class="intro-photo">Choisissez vos modèles avec le bouton +. Pour chacun, vous pouvez ajouter <b>une photo</b> ou écrire <b>le texte à graver</b> (facultatif).<br>Plusieurs photos à réunir sur une même gravure&nbsp;? Ajoutez-en <b>jusqu’à 4</b> par gravure.</p>
       <div class="produit" data-id="p10x10" data-multi="4" data-court="10x10" data-prix="12">
         <div class="p-ligne">
           <span class="p-nom">10 x 10 cm</span><span class="p-prix">12 €</span>
@@ -355,8 +355,8 @@
       var lignes = [];
       if (tel) lignes.push('📞 <a href="tel:' + tel.replace(/[^0-9+]/g, '') + '">' + tel + '</a>');
       if (mail) lignes.push('✉️ <a href="mailto:' + mail + '?subject=Ma%20commande%20Sorcier%20Artisan">' + mail + '</a>');
-      return 'Ta commande n\'a pas pu être envoyée. Réessaie dans un instant' +
-        (lignes.length ? ', ou contacte-moi directement :<br>' + lignes.join('<br>') : '.');
+      return 'Votre commande n\'a pas pu être envoyée. Réessayez dans un instant' +
+        (lignes.length ? ', ou contactez-moi directement :<br>' + lignes.join('<br>') : '.');
     }
     function afficher(cls, html) { msg.className = 'msg ' + cls; msg.innerHTML = html; }
     function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
@@ -366,9 +366,9 @@
       e.preventDefault();
       if (typeof ENVOI_URL === 'undefined') { afficher('err', 'Configuration manquante (config.js).'); return; }
       var r = lireProduits();
-      if (!r.items.length) { afficher('err', 'Choisis au moins un modèle avec le bouton +.'); return; }
+      if (!r.items.length) { afficher('err', 'Choisissez au moins un modèle avec le bouton +.'); return; }
       if (produits.some(function (p) { return p.photos.some(function (ph) { return ph.wait > 0; }); })) {
-        afficher('err', 'Photo en préparation, réessaie dans 2 secondes.'); return;
+        afficher('err', 'Photo en préparation, réessayez dans 2 secondes.'); return;
       }
       var prenom = val('prenom') || 'client';
       var photos = [];
@@ -389,7 +389,7 @@
       };
 
       btn.disabled = true;
-      afficher('', '<span class="spinner"></span>Envoi en cours' + (photos.length ? ' (' + photos.length + ' photo' + (photos.length > 1 ? 's' : '') + ')' : '') + '… ne ferme pas la page');
+      afficher('', '<span class="spinner"></span>Envoi en cours' + (photos.length ? ' (' + photos.length + ' photo' + (photos.length > 1 ? 's' : '') + ')' : '') + '… ne fermez pas la page');
 
       fetch(ENVOI_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(donnees) })
         .then(function (rep) { return rep.json(); })
@@ -397,8 +397,8 @@
           btn.disabled = false;
           if (res && res.success) {
             var txt = form.getAttribute('data-merci').replace('{prenom}', donnees.prenom);
-            if (res.devis) txt += '<br>Pour la partie sur devis, je te recontacte avec un prix.';
-            if (res.photoKo) txt += '<br><b>Attention :</b> une photo n\'a pas pu être enregistrée, je te recontacte pour la récupérer.';
+            if (res.devis) txt += '<br>Pour la partie sur devis, je vous recontacte avec un prix.';
+            if (res.photoKo) txt += '<br><b>Attention :</b> une photo n\'a pas pu être enregistrée, je vous recontacte pour la récupérer.';
             document.getElementById('merciTexte').innerHTML = txt;
             form.style.display = 'none';
             document.getElementById('merci').style.display = 'block';

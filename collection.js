@@ -8,7 +8,7 @@
 var PLANNING = [
   {
     nom: 'Boules de Noël', emoji: '🎄', debut: '2026-11-07', dateLimite: '2026-12-19',
-    sousTitre: 'Boules de Noël en bois gravées à ton prénom',
+    sousTitre: 'Boules de Noël en bois gravées à votre prénom',
     unite: 'boule', unites: 'boules', article: 'une',
     prixUne: 6, prixDeux: 10, maxCaracteres: 12, champ: 'prénom', exemple: 'Léa',
     // x, y = centre de la zone du texte (% de l'image) ; l = largeur utile (%)
@@ -43,7 +43,7 @@ var PLANNING = [
       for (var k in src) if (!(k in c)) c[k] = src[k];
     }
     for (var d in DEFAUT) if (!(d in c)) c[d] = DEFAUT[d];
-    if (!c.sousTitre) c.sousTitre = c.nom + ' : créations en bois gravées à ton prénom';
+    if (!c.sousTitre) c.sousTitre = c.nom + ' : créations en bois gravées à votre prénom';
     c.finCommandes = function () { return jour(c.dateLimite, true); };
     c.dateTexte = function () { return texteDate(c.dateLimite); };
     c.debutTexte = function () { return texteDate(c.debut); };
