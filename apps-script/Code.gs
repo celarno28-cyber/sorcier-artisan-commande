@@ -280,7 +280,7 @@ function lireCommande_(d) {
     if (c.asso && !p.boule) return;   // une commande association ne contient que des pièces du grimoire
     var detail = texte_(it.detail, 200);
     if (p.detail && !detail) {
-      throw new Error('Précise ta demande pour « ' + p.label + ' ».');
+      throw new Error('Précisez votre demande pour « ' + p.label + ' ».');
     }
     var txt = qty + '× ' + p.label + (detail ? ' (' + detail + ')' : '');
     if (p.prix == null) {
@@ -344,7 +344,7 @@ function lireCommande_(d) {
     throw new Error('Il faut une photo pour chaque modèle commandé.');
   }
   if (c.photos.length < photosAnnoncees) {
-    throw new Error('Une photo ne nous est pas parvenue, réessaie.');
+    throw new Error('Une photo ne nous est pas parvenue, réessayez.');
   }
   return c;
 }
@@ -365,25 +365,25 @@ function envoyerConfirmation_(c, photoKo) {
            (l.indexOf(' → ') >= 0 ? '</span>' : '') + '</li>';
   }).join('');
   var total = c.total ? c.total + ' €' : '';
-  if (c.devis) total += (total ? ' + ' : '') + 'partie sur devis (je te recontacte avec un prix)';
-  var objet = c.grimoire ? 'Ta commande de boules de Noël 🎄 – Le Sorcier Artisan'
-                         : 'Ta commande est bien reçue – Le Sorcier Artisan';
+  if (c.devis) total += (total ? ' + ' : '') + 'partie sur devis (je vous recontacte avec un prix)';
+  var objet = c.grimoire ? 'Votre commande de boules de Noël 🎄 – Le Sorcier Artisan'
+                         : 'Votre commande est bien reçue – Le Sorcier Artisan';
 
   var html =
     '<div style="font-family:Georgia,serif;font-size:15px;color:#2a1f14;max-width:560px">' +
     '<p>Bonjour ' + echapper_(c.prenom) + ',</p>' +
-    '<p>Merci pour ta commande ! Je l\'ai bien reçue et je te recontacte rapidement pour la valider avec toi.</p>' +
-    '<h3 style="color:' + bleu + ';margin:18px 0 6px">Ta commande</h3>' +
+    '<p>Merci pour votre commande ! Je l\'ai bien reçue et je vous recontacte rapidement pour la valider avec vous.</p>' +
+    '<h3 style="color:' + bleu + ';margin:18px 0 6px">Votre commande</h3>' +
     '<ul style="padding-left:18px;margin:0">' + lignes + '</ul>' +
     (total ? '<p style="font-size:17px"><b>Total : ' + echapper_(total) + '</b>' +
              (c.type === 'livraison' && !c.asso ? ' <span style="color:#555">(frais d\'envoi compris)</span>' : '') + '</p>' : '') +
     (c.asso ? '<p style="font-size:16px">🏫 Dont <b>' + c.reverse + ' €</b> reversés à <b>' + echapper_(c.asso.nom) + '</b>. Merci pour l\'école !</p>' : '') +
     (c.asso && c.asso.paiement
-      ? '<p style="font-size:16px;color:#a50e0e"><b>⚠️ Dernière étape obligatoire :</b> règle ta commande sur HelloAsso, sinon elle ne pourra pas être réalisée.</p>' +
+      ? '<p style="font-size:16px;color:#a50e0e"><b>⚠️ Dernière étape obligatoire :</b> réglez votre commande sur HelloAsso, sinon elle ne pourra pas être réalisée.</p>' +
         '<p><a href="' + c.asso.paiement + '" style="display:inline-block;padding:10px 18px;background:#c9974b;color:#1a120b;border-radius:6px;text-decoration:none;font-weight:bold">Payer ma commande sur HelloAsso</a></p>'
       : '') +
     (c.photos.length ? '<p>📷 ' + c.photos.length + ' photo' + (c.photos.length > 1 ? 's reçues' : ' reçue') + '.</p>' : '') +
-    (photoKo ? '<p style="color:#a50e0e"><b>Attention :</b> une photo n\'a pas pu être enregistrée, je te recontacte pour la récupérer.</p>' : '') +
+    (photoKo ? '<p style="color:#a50e0e"><b>Attention :</b> une photo n\'a pas pu être enregistrée, je vous recontacte pour la récupérer.</p>' : '') +
     (c.asso
       ? '<h3 style="color:' + bleu + ';margin:18px 0 6px">Livraison</h3><p style="margin:0">' + echapper_(c.livraisonAsso.texte) +
         '</p><p>Pour : ' + echapper_(c.enfant) + ' (' + echapper_(c.classe) + ')</p>'
@@ -393,11 +393,11 @@ function envoyerConfirmation_(c, photoKo) {
         echapper_(c.prenom + ' ' + c.nom) + '<br>' + echapper_(c.adresse) + '<br>' + echapper_(c.cp + ' ' + c.ville) + '</p>' +
         (c.delai ? '<p>Date souhaitée : <b>' + Utilities.formatDate(c.delai, tz, 'dd/MM/yyyy') + '</b></p>' : '')
       : '') +
-    (c.precisions ? '<p>Tes précisions : <i>' + echapper_(c.precisions) + '</i></p>' : '') +
-    '<p>Une erreur dans ta commande (prénom, modèle, adresse) ? Réponds simplement à cet e-mail ou appelle-moi au ' +
+    (c.precisions ? '<p>Vos précisions : <i>' + echapper_(c.precisions) + '</i></p>' : '') +
+    '<p>Une erreur dans votre commande (prénom, modèle, adresse) ? Répondez simplement à cet e-mail ou appelez-moi au ' +
     TELEPHONE_CONTACT + '.</p>' +
     '<p>À très vite,<br><b>Arno – Le Sorcier Artisan</b><br><span style="color:#555">CELARNO28 · Gravure sur bois · Orgères-en-Beauce</span></p>' +
-    '<p style="color:#999;font-size:12px">Tes informations servent uniquement à réaliser ta commande. ' +
+    '<p style="color:#999;font-size:12px">Vos informations servent uniquement à réaliser votre commande. ' +
     '<a href="' + LIEN_CONFIDENTIALITE + '" style="color:#999">Confidentialité</a></p>' +
     '</div>';
 

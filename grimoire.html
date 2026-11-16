@@ -181,19 +181,19 @@
     <p class="offre" id="offre"></p>
 
     <div id="etapeQui" style="display:none">
-      <h2>Pour qui commandes-tu ?</h2>
+      <h2>Pour qui commandez-vous ?</h2>
       <div id="listeQui"></div>
     </div>
 
     <form id="commande" data-type="livraison"
-          data-merci="Merci {prenom} ! Ta commande est bien enregistrée. Je te recontacte rapidement pour la valider avec toi.">
+          data-merci="Merci {prenom} ! Votre commande est bien enregistrée. Je vous recontacte rapidement pour la valider avec vous.">
 
       <div class="bandeau-asso" id="bandeauAsso" style="display:none"></div>
-      <h2 id="titreChoix">Choisis tes modèles</h2>
+      <h2 id="titreChoix">Choisissez vos modèles</h2>
       <div id="modeles"></div>
       <div class="total" id="total"></div>
 
-      <h2>Tes coordonnées</h2>
+      <h2>Vos coordonnées</h2>
       <div class="row2">
         <div><label class="lbl" for="prenom">Prénom</label><input type="text" id="prenom" autocomplete="given-name" required></div>
         <div><label class="lbl" for="nom">Nom</label><input type="text" id="nom" autocomplete="family-name" required></div>
@@ -201,7 +201,7 @@
       <label class="lbl" for="telephone">Téléphone</label>
       <input type="tel" id="telephone" autocomplete="tel" placeholder="06 12 34 56 78" required>
       <label class="lbl" for="email">E-mail</label>
-      <input type="email" id="email" autocomplete="email" placeholder="toi@exemple.fr" required>
+      <input type="email" id="email" autocomplete="email" placeholder="vous@exemple.fr" required>
 
       <div id="blocAsso" style="display:none">
         <h2>Pour l'école</h2>
@@ -223,7 +223,7 @@
       </div>
 
       <h2>Délai</h2>
-      <label class="lbl" for="delai">Date à laquelle tu souhaites recevoir ta commande</label>
+      <label class="lbl" for="delai">Date à laquelle vous souhaitez recevoir votre commande</label>
       <input type="date" id="delai" required>
       <p class="hint">Compte au moins 3 jours pour l'envoi postal. Frais d'envoi compris.</p>
       </div>
@@ -260,12 +260,12 @@
     function maj1(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
     document.title = 'Le Sorcier Artisan — ' + C.nom;
     document.getElementById('sousTitre').textContent = C.sousTitre;
-    document.getElementById('titreChoix').textContent = 'Choisis tes ' + US;
+    document.getElementById('titreChoix').textContent = 'Choisissez vos ' + US;
     document.getElementById('titreMerci').textContent = 'Merci ! ' + C.emoji;
     document.getElementById('offre').innerHTML = '<b>' + PRIX_UNE + ' €</b> ' + (C.article === 'un' ? 'le ' : 'la ') + U +
       (PRIX_DEUX ? ' · <b>' + PRIX_DEUX + ' € les 2</b>' : '') + '<span id="envoiCompris"> · <b>envoi compris</b></span><br>' +
       '<span id="limite" style="color:var(--brass)">' + C.emoji + ' Commandes jusqu\'au ' + C.dateTexte() + '</span><br>' +
-      '<small>Choisis tes modèles, écris un ' + C.champ + ' par ' + U + ' (' + MAX_CARACTERES + ' caractères max).</small>';
+      '<small>Choisissez vos modèles, écrivez un ' + C.champ + ' par ' + U + ' (' + MAX_CARACTERES + ' caractères max).</small>';
 
     var form = document.getElementById('commande');
 
@@ -274,7 +274,7 @@
       form.style.display = 'none';
       var clos = document.createElement('div'); clos.className = 'merci'; clos.style.display = 'block';
       clos.innerHTML = '<h2>Le grimoire se prépare… ✨</h2><p>' + C.messageFerme() +
-        '<br>En attendant, tu peux commander mes autres créations.</p>' +
+        '<br>En attendant, vous pouvez commander mes autres créations.</p>' +
         '<p><a href="photo.html">Voir les autres commandes</a></p>';
       form.parentNode.insertBefore(clos, form);
       document.getElementById('offre').style.display = 'none';
@@ -299,7 +299,7 @@
           (ASSO.description ? ' <small>(' + echap(ASSO.description) + ')</small>' : '') + '<br>' + texteReverse(ASSO) +
           '<br>Commandes jusqu\'au <b>' + ASSO.dateTexte() + '</b>' +
           (associationsActives(C).length ? ' · <a href="#" id="changerQui">changer</a>' : '') +
-          (ASSO.paiement ? '<span class="alerte">⚠️ Après l\'envoi, règle ta commande sur <b>HelloAsso</b> (lien affiché à la fin) : sans paiement, elle ne pourra pas être réalisée.</span>' : '');
+          (ASSO.paiement ? '<span class="alerte">⚠️ Après l\'envoi, réglez votre commande sur <b>HelloAsso</b> (lien affiché à la fin) : sans paiement, elle ne pourra pas être réalisée.</span>' : '');
         var ch = document.getElementById('changerQui');
         if (ch) ch.addEventListener('click', function (e) { e.preventDefault(); montrerQui(); });
       }
@@ -332,7 +332,7 @@
         b.addEventListener('click', function () { action(); window.scrollTo(0, 0); });
         liste.appendChild(b);
       }
-      bouton('🎁', 'Pour moi ou en cadeau', 'Livraison chez toi, envoi compris', function () { setMode(null); });
+      bouton('🎁', 'Pour moi ou en cadeau', 'Livraison chez vous, envoi compris', function () { setMode(null); });
       associationsActives(C).forEach(function (a) {
         bouton(a.emoji, 'Pour ' + echap(a.nom), echap(a.description || 'Association partenaire') + ' : ' +
           a.reverseUne + ' € par ' + U + ' reversés à l\'école', function () { setMode(a); });
@@ -449,7 +449,7 @@
       var t = prixTotal(n);
       totalEl.innerHTML = 'Total : ' + t + ' €' + (ASSO ? '' : ' <small>envoi compris</small>') + '<br><small>' + n + ' ' + pluriel(n) +
         (!PRIX_DEUX ? '' : n >= 2 ? ' · tarif 2 pour ' + PRIX_DEUX + ' € appliqué'
-                                  : ' · ajoute-en ' + C.article + ' 2ᵉ : les 2 pour ' + PRIX_DEUX + ' €') + '</small>' +
+                                  : ' · ajoutez-en ' + C.article + ' 2ᵉ : les 2 pour ' + PRIX_DEUX + ' €') + '</small>' +
         (ASSO ? '<span class="reverse">' + ASSO.emoji + ' dont <b>' + ASSO.reverse(n) + ' €</b> reversés à ' + echap(ASSO.nom) + '</span>' : '');
     }
 
@@ -463,8 +463,8 @@
       var lignes = [];
       if (tel) lignes.push('📞 <a href="tel:' + tel.replace(/[^0-9+]/g, '') + '">' + tel + '</a>');
       if (mail) lignes.push('✉️ <a href="mailto:' + mail + '?subject=Ma%20commande%20Sorcier%20Artisan">' + mail + '</a>');
-      return 'Ta commande n\'a pas pu être envoyée. Réessaie dans un instant' +
-        (lignes.length ? ', ou contacte-moi directement :<br>' + lignes.join('<br>') : '.');
+      return 'Votre commande n\'a pas pu être envoyée. Réessayez dans un instant' +
+        (lignes.length ? ', ou contactez-moi directement :<br>' + lignes.join('<br>') : '.');
     }
     function afficher(cls, html) { msg.className = 'msg ' + cls; msg.innerHTML = html; }
     function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
@@ -473,7 +473,7 @@
       e.preventDefault();
       if (typeof ENVOI_URL === 'undefined') { afficher('err', 'Configuration manquante (config.js).'); return; }
       var n = nbBoules();
-      if (!n) { afficher('err', 'Choisis au moins ' + C.article + ' ' + U + ' avec le bouton +.'); return; }
+      if (!n) { afficher('err', 'Choisissez au moins ' + C.article + ' ' + U + ' avec le bouton +.'); return; }
       var items = [];
       MODELES.forEach(function (m) {
         if (!m.noms.length) return;
@@ -488,28 +488,28 @@
       };
       if (ASSO) {
         var choix = form.querySelector('input[name=livraisonAsso]:checked');
-        if (!choix) { afficher('err', 'Choisis le mode de livraison.'); return; }
+        if (!choix) { afficher('err', 'Choisissez le mode de livraison.'); return; }
         donnees.asso = ASSO.id; donnees.enfant = val('enfant'); donnees.classe = val('classe');
         donnees.livraisonAsso = choix.value;
         donnees.adresse = ''; donnees.cp = ''; donnees.ville = ''; donnees.delai = '';
       }
       btn.disabled = true;
-      afficher('', '<span class="spinner"></span>Envoi en cours… ne ferme pas la page');
+      afficher('', '<span class="spinner"></span>Envoi en cours… ne fermez pas la page');
       fetch(ENVOI_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(donnees) })
         .then(function (rep) { return rep.json(); })
         .then(function (res) {
           btn.disabled = false;
           if (res && res.success) {
             var payer = (ASSO && ASSO.paiement)
-              ? '<div class="payer"><p>⚠️ <b>Dernière étape obligatoire :</b> règle tes ' + n + ' ' + pluriel(n) + ' (<b>' + prixTotal(n) + ' €</b>) sur HelloAsso. ' +
-                'Sans paiement, ta commande ne pourra pas être réalisée.</p>' +
+              ? '<div class="payer"><p>⚠️ <b>Dernière étape obligatoire :</b> réglez vos ' + n + ' ' + pluriel(n) + ' (<b>' + prixTotal(n) + ' €</b>) sur HelloAsso. ' +
+                'Sans paiement, votre commande ne pourra pas être réalisée.</p>' +
                 '<a class="btn-payer" href="' + ASSO.paiement + '" target="_blank" rel="noopener">Payer ma commande sur HelloAsso</a></div>'
               : '';
             document.getElementById('merciTexte').innerHTML = (ASSO
-                ? 'Merci ' + echap(donnees.prenom) + ' ! Ta commande est bien enregistrée.'
+                ? 'Merci ' + echap(donnees.prenom) + ' ! Votre commande est bien enregistrée.'
                 : form.getAttribute('data-merci').replace('{prenom}', donnees.prenom)) +
               (ASSO ? '<br>' + ASSO.emoji + ' <b>' + ASSO.reverse(n) + ' €</b> seront reversés à ' + echap(ASSO.nom) + '. Merci pour l\'école !' : '') + payer +
-              (res.mailOk ? '<br>📧 Un récapitulatif vient de t\'être envoyé par e-mail (pense à regarder dans les indésirables).' : '');
+              (res.mailOk ? '<br>📧 Un récapitulatif vient de vous être envoyé par e-mail (pensez à regarder dans les indésirables).' : '');
             form.style.display = 'none';
             document.getElementById('merci').style.display = 'block';
             window.scrollTo(0, 0);
